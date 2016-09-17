@@ -4,6 +4,7 @@
 <script type="text/javascript" src="<?php echo base_url();?>assets/js/jquery.tablesorter.widgets.min.js"></script>
 <script type="text/javascript" src="<?php echo base_url();?>assets/js/jquery.tablesorter.colsel.js"></script>
 <script type="text/javascript" src="<?php echo base_url();?>assets/js/jquery.tablesorter.print.js"></script>
+<script type="text/javascript" src="<?php echo base_url();?>assets/js/zebra_datepicker.js"></script>
 <script type="text/javascript" src="<?php echo base_url();?>assets/js/jquery-ui.js"></script>
 <link rel="stylesheet" href="<?php echo base_url();?>assets/css/jquery-ui.css">
 <link rel="stylesheet" href="<?php echo base_url();?>assets/css/jquery.ptTimeSelect.css">
@@ -120,6 +121,16 @@ $(document).ready(function(){$("#from_date").datepicker({
 					}
 					?>
 					</select>
+					<select name="visit_name" id="visit_name" class="form-control" >
+					<option value="">All</option>
+					<?php 
+					foreach($visit_names as $v){
+						echo "<option value='".$v->visit_name_id."'";
+						if($this->input->post('visit_name') && $this->input->post('visit_name') == $v->visit_name_id) echo " selected ";
+						echo ">".$v->visit_name."</option>";
+					}
+					?>
+					</select>
 					<input class="btn btn-sm btn-primary" type="submit" value="Submit" />
 		</form>
 	<br />
@@ -159,7 +170,7 @@ $(document).ready(function(){$("#from_date").datepicker({
 	<tr>
 		<td><?php echo $i++;?></td>
 		<td><?php if($s->admit_date!=0) echo date("d-M-Y",strtotime($s->admit_date));?></td>
-		<td><?php if($s->admit_time!=0) echo date("g:iA",strtotime($s->admit_time));?></td>
+		<td><?php if(!!$s->admit_time) echo date("g:iA",strtotime($s->admit_time));?></td>
 		<td><?php echo $s->hosp_file_no;?></td>
 		<td><?php echo $s->gender;?></td>
 		<td><?php echo $s->name;?></td>

@@ -65,6 +65,30 @@ $(function(){
 			$('#table-sort').trigger('printTable');
 		  });
 });
+
+//create function for  for Excel report
+  function fnExcelReport() {
+      //created a variable named tab_text where 
+      
+    var tab_text = '<html xmlns:x="urn:schemas-microsoft-com:office:excel">';
+    //row and columns arrangements
+    tab_text = tab_text + '<head><xml><x:ExcelWorkbook><x:ExcelWorksheets><x:ExcelWorksheet>';
+    tab_text = tab_text + '<x:Name>Excel Sheet</x:Name>';
+
+    tab_text = tab_text + '<x:WorksheetOptions><x:Panes></x:Panes></x:WorksheetOptions></x:ExcelWorksheet>';
+    tab_text = tab_text + '</x:ExcelWorksheets></x:ExcelWorkbook></xml></head><body>';
+
+    tab_text = tab_text + "<table border='100px'>";
+    //id is given which calls the html table
+    tab_text = tab_text + $('#table-excel').html();
+    tab_text = tab_text + '</table></body></html>';
+    var data_type = 'data:application/vnd.ms-excel';
+    $('#test').attr('href', data_type + ', ' + encodeURIComponent(tab_text));
+    //downloaded excel sheet name is given here
+    $('#test').attr('download', 'staff_detailed.xls');
+
+  }
+
 </script>
 	
 
@@ -78,69 +102,12 @@ $(function(){
 		});
 	});
 	</script>
-	
-	<div class="col-md-10 col-md-offset-2">
-		<h4>Search Staff</h4>	
-		<?php echo form_open("staff/edit/view_staff",array('role'=>'form','class'=>'form-custom')); ?>
-					
-					<select name="department_id" id="department" class="form-control">
-					<option value="">Department</option>
-					<?php 
-					foreach($department as $dept){
-						echo "<option value='".$dept->department_id."'";
-						if($this->input->post('department_id') && $this->input->post('department_id') == $dept->department_id) echo " selected ";
-						echo ">".$dept->department."</option>";
-					}
-					?>
-					</select>
-					
-					<select name="designation" id="designation" class="form-control">
-					<option value="">Designation</option>
-					<?php 
-					
-					foreach($designation as $des){
-						echo "<option value='".$des->designation."'";
-						if($this->input->post('designation') && $this->input->post('designation') == $des->designation) echo " selected ";
-						echo ">".$des->designation."</option>";
-					}
-					?>
-					</select>
-					
-					<select name="staff_category_id" id="staff_category" class="form-control">
-					<option value="">Staff Category</option>
-					<?php 
-					foreach($staff_category as $staff_cat){
-						echo "<option value='".$staff_cat.staff_cat_id."'";
-						if($this->input->post('staff_category_id') && $this->input->post('staff_category_id') == $staff_cat.staff_category_id) echo "selected ";
-						echo ">".$staff_cat->staff_category."</option>";
-					}
-					?>
-					</select>					
-					
-					<select name="gender" id="gender" class="form-control">
-						<option value="">Gender</option>
-						<option value ="M">Male</option>
-						<option value ="F">Female</option>
-					</select>
-					
-					<select name="mci_flag" id="mci_flag" class="form-control">
-						<option value="">MCI</option>
-						<option value ="1">Yes</option>
-						<option value ="0">No</option>
-					</select>
-					
-					<input name="search" value="true" type="hidden"></input>
-					<input class="btn btn-sm btn-primary" type="submit" value="search"/>
-		</form>
-		</div>
-	<br />
-	
-	
+
 <?php if(isset($mode)&& $mode=="select" || $this->input->post('update')){?>
 	<center>	<h3>View Staff </h3></center><br>
 	<?php 
     echo validation_errors();
-	echo form_open('staff/edit/view_staff',array('class'=>'form-horizontal','role'=>'form','id'=>'staff')); 
+	echo form_open('staff/view/view_staff',array('class'=>'form-horizontal','role'=>'form','id'=>'staff')); 
 	?>
 	 <div class="col-md-2 col-xs-2 pull-right">
 		
@@ -156,7 +123,18 @@ $(function(){
 	<?php
 	}
 	?>
-	
+
+<div>
+
+  <!-- Nav tabs -->
+  <ul class="nav nav-tabs" role="tablist">
+    <li role="presentation" class="active"><a href="#home" aria-controls="home" role="tab" data-toggle="tab">General</a></li>
+    <li role="presentation"><a href="#bank" aria-controls="bank" role="tab" data-toggle="tab">Bank</a></li>
+  </ul>
+  
+  <!-- Tab panes -->
+  <div class="tab-content">
+    <div role="tabpanel" class="tab-pane active" id="home">
 
 	<div class="form-group">
 		<input type='hidden' name='staff_id' value='<?php echo $view_staff[0]->staff_id; ?>' />
@@ -392,34 +370,264 @@ $(function(){
 			value='<?php echo $view_staff[0]->research ?>' readonly/>
 		</div>
 	</div>		
-	
+		
+	</div>
+    <div role="tabpanel" class="tab-pane" id="bank">
+		
+		<div class="form-group">
+			<div class="col-md-3">
+				<label for="account_name" class="control-label">Account Name</label>
+			</div>
+			<div class="col-md-6">
+				<input type="text" class="form-control" placeholder="Bank Account Name" id="account_name" name="account_name" value="<?php echo $view_staff[0]->account_name ?>" readonly />
+			</div>
+		</div>
+		<div class="form-group">
+			<div class="col-md-3">
+				<label for="bank" class="control-label">Bank Name</label>
+			</div>
+			<div class="col-md-6">
+				<input type="text" class="form-control" placeholder="Bank" id="bank" name="bank" value="<?php echo $view_staff[0]->bank; ?>" readonly />
+			</div>
+		</div>
+		<div class="form-group">
+			<div class="col-md-3">
+				<label for="bank_branch" class="control-label">Branch</label>
+			</div>
+			<div class="col-md-6">
+				<input type="text" class="form-control" placeholder="Branch" id="bank_branch" name="bank_branch" value="<?php echo $view_staff[0]->bank_branch ?>" readonly />
+			</div>
+		</div>
+		<div class="form-group">
+			<div class="col-md-3">
+				<label for="account_number" class="control-label">Account Number</label>
+			</div>
+			<div class="col-md-6">
+				<input type="text" class="form-control" placeholder="Account Number" id="account_number" name="account_number" value="<?php echo $view_staff[0]->account_number ?>" readonly />
+			</div>
+		</div>
+		<div class="form-group">
+			<div class="col-md-3">
+				<label for="ifsc_code" class="control-label">IFSC Code</label>
+			</div>
+			<div class="col-md-6">
+				<input type="text" class="form-control" placeholder="IFSC Code" id="ifsc_code" name="ifsc_code" value="<?php echo $view_staff[0]->ifsc_code ?>" readonly />
+			</div>
+		</div>
+	</div>
+</div>
+</div>
 		
 	</form>
 	</div>
 	
 	<?php } 
-	else{ ?>
+	else{ ?> 
+		
+	<div class="col-md-10 col-md-offset-2">
+		<h4>Search Staff</h4>	
+		<?php echo form_open("staff/view/view_staff",array('role'=>'form','class'=>'form-custom')); ?>
+					
+					<select name="department_id" id="department" class="form-control">
+					<option value="">Department</option>
+					<?php 
+					foreach($department as $dept){
+						echo "<option value='".$dept->department_id."'";
+						if($this->input->post('department_id') && $this->input->post('department_id') == $dept->department_id) echo " selected ";
+						echo ">".$dept->department."</option>";
+					}
+					?>
+					</select>
+					<select name="area_id" id="area" class="form-control">
+					<option value="">Area</option>
+					<?php 
+					foreach($area as $ar){
+						echo "<option value='".$ar->area_id."'";
+						if($this->input->post('area_id') && $this->input->post('area_id') == $ar->area_id) echo " selected ";
+						echo ">".$ar->area_name."</option>";
+					}
+					?>
+					</select>
+					
+					<select name="designation" id="designation" class="form-control">
+					<option value="">Designation</option>
+					<?php 
+					
+					foreach($designation as $des){
+						echo "<option value='".$des->designation."'";
+						if($this->input->post('designation') && $this->input->post('designation') == $des->designation) echo " selected ";
+						echo ">".$des->designation."</option>";
+					}
+					?>
+					</select>
+					
+					<select name="staff_category" id="staff_category" class="form-control">
+					<option value="">Staff Category</option>
+					<?php 
+					foreach($staff_category as $staff_cat){
+						echo "<option value='".$staff_cat->staff_category_id."'";
+						if($this->input->post('staff_category') && $this->input->post('staff_category') == $staff_cat->staff_category_id) echo "selected ";
+						echo ">".$staff_cat->staff_category."</option>";
+					}
+					?>
+					</select>					
+					
+					<select name="gender" id="gender" class="form-control">
+						<option value="">Gender</option>
+						<option value ="M" <?php if($this->input->post('gender') && $this->input->post('gender')=='M') echo "selected ";?>>Male</option>
+						<option value ="F" <?php if($this->input->post('gender') && $this->input->post('gender')=='F') echo "selected ";?>>Female</option>
+					</select>
+					
+					<select name="mci_flag" id="mci_flag" class="form-control">
+						<option value="">MCI</option>
+						<option value ="1" <?php if($this->input->post('mci_flag') && $this->input->post('mci_flag')==1) echo "selected ";?>>Yes</option>
+						<option value ="0" <?php if($this->input->post('mci_flag') && $this->input->post('mci_flag')==0) echo "selected ";?>>No</option>
+					</select>
+					
+					<input name="search_staff" value="true" type="hidden"></input>
+					<input class="btn btn-sm btn-primary" type="submit" value="search"/>
+		</form>
+		</div>
+	<br />
+	
+	<?php if($this->input->post('search_staff')){ ?>
 	<div class="col-md-10 col-md-offset-2">
 	<h3 class="col-md-12 ">List of Staff</h3>
 	<div class="col-md-12 offset-3 ">
 	</div>	
+		<div style="float:right">
+		<?php echo form_open('staff/view/view_staff',array('id'=>'search_staff')); ?>	
+		<?php
+		if($this->input->post('department_id')==0) $department_id = ""; else $department_id = $this->input->post('department_id'); 
+		if($this->input->post('area_id')==0) $area_id = ""; else $area_id = $this->input->post('area_id'); 
+		if($this->input->post('unit_id')==0) $unit_id = ""; else $unit_id = $this->input->post('unit_id'); 
+		if($this->input->post('staff_category')==0) $staff_category = ""; else $staff_category = $this->input->post('staff_category'); 
+		if($this->input->post('designation')=="") $designation = ""; else $designation = $this->input->post('designation'); 
+		?>
+		<input type="text" hidden class="sr-only" value="<?php echo $department_id; ?>"  name="department_id" />
+		<input type="text" hidden class="sr-only" value="<?php echo $area_id; ?>"  name="area_id" />
+		<input type="text" hidden class="sr-only" value="<?php echo $unit_id; ?>"  name="unit_id" />
+		<input type="text" hidden class="sr-only" value="<?php echo $designation; ?>"  name="designation" />
+		<input type="text" hidden class="sr-only" value="<?php echo $staff_category; ?>"  name="staff_category" />
+		<input type="text" hidden class="sr-only" value="<?php echo $this->input->post('gender'); ?>"  name="gender" />
+		<input type="text" hidden class="sr-only" value="<?php echo $this->input->post('mci_flag'); ?>"  name="mci_flag" />
+		<input type="text" hidden class="sr-only" value="<?php echo $this->input->post('search_staff'); ?>"  name="search_staff" />
+		<?php 
+			$this->input->post('bank_details')? $bank_details = 0 : $bank_details = 1;
+		?>
+		<input type="text" hidden class="sr-only" value="<?php echo $bank_details;?>"  name="bank_details" />
+		<?php if(!!$bank_details){ ?>
+		<button type="submit" class="btn btn-default btn-md">
+		  <span class="fa fa-rupee"></span> Bank Details
+		</button>
+		<?php }
+		else { ?>
+		<button type="submit" class="btn btn-default btn-md">
+		  <span class="fa fa-user"></span> Staff Details
+		</button>
+		<?php } ?>
+		</form>
+		</div>
 		<h3><?php if(isset($msg)) echo $msg;?></h3>	
 		<button type="button" class="btn btn-default btn-md print">
 		  <span class="glyphicon glyphicon-print"></span> Print
 		</button>
+                <!--created button which converts html table to Excel sheet-->
+        <a href="#" id="test" onClick="javascript:fnExcelReport();">
+            <button type="button" class="btn btn-default btn-md excel">
+            <i class="fa fa-file-excel-o"ara-hidden="true"></i>Export to Excel</button>
+        </a>
 		<table class="table table-bordered table-striped" id="table-sort">
+	<thead>
+		<th style="text-align:center">S.no</th>
+		<th style="text-align:center">Department</th>
+		<th style="text-align:center">Area</th>
+		<th style="text-align:center">Designation</th>
+		<th style="text-align:center">Staff category</th>
+		<?php if(!!$bank_details) { ?>
+		<th style="text-align:center">Name</th>
+		<th style="text-align:center">Gender</th>
+		<th style="text-align:center">DOB</th>
+		<th style="text-align:center">Phone</th>
+		<th style="text-align:center">Email</th>                		
+		<th style="text-align:center">Status</th>
+		<?php } 
+		else { ?>
+		<th style="text-align:center">Account Name</th>
+		<th style="text-align:center">Bank</th>
+		<th style="text-align:center">Branch</th>
+		<th style="text-align:center">Account #</th>
+		<th style="text-align:center">IFSC</th>                		
+		<?php } ?>
+	</thead>
+	<tbody>
+	<?php 
+	$i=1;
+        if(isset($view_staff) && $view_staff){
+	foreach($view_staff as $a){ ?>
+	<tr onclick="$('#select_staff_form_<?php echo $a->staff_id;?>').submit();" >
+		<td>	
+			<?php echo form_open('staff/view/view_staff',array('id'=>'select_staff_form_'.$a->staff_id,'role'=>'form')); ?>
+			<?php echo $i++; ?>
+		</td>
+		
+		<td><?php echo $a->department;?></td>
+		<td><?php echo $a->area_name;?></td>
+		<td><?php echo $a->designation;?> </td>
+		<td><?php echo $a->staff_category;?>
+		<input type="hidden" value="<?php echo $a->staff_id; ?>" name="staff_id" />
+		<input type="hidden" value="select" name="select" /> </td>		
+		<?php if(!!$bank_details) { ?>
+		<td><?php echo  $a->first_name." ".$a->last_name;  ?></td>
+		<td> <?php echo $a->gender;?>
+		</td>
+		<td><?php echo date("d-M-Y",strtotime($a->date_of_birth)); ?></td>
+                <td><?php echo $a->phone; ?></td>
+                <td><?php echo $a->email; ?></td>
+		<td><?php echo $a->hr_transaction_type;?></td>
+		<?php } 
+		else { ?>
+		<td><?php echo $a->account_name;?></td>
+		<td><?php echo $a->bank;?></td>
+		<td><?php echo $a->bank_branch;?> </td>
+		<td><?php echo $a->account_number;?> </td>
+		<td><?php echo $a->ifsc_code;?> </td>
+		<?php } ?>
+		</form>
+	</tr>
+	<?php } ?>
+	</tbody>
+	</table>
+	
+	
+
+	</div></div>
+	
+	<div class="col-md-10 col-md-offset-2">
+        
+        <table class="sr-only" id="table-excel">
 	<thead>
 		<th style="text-align:center">S.no</th>
 		
 		<th style="text-align:center">Department</th>
+		<th style="text-align:center">Area</th>
 		<th style="text-align:center">Designation</th>
 		<th style="text-align:center">Staff category</th>
+		<?php if(!!$bank_details) { ?>
 		<th style="text-align:center">Name</th>
 		<th style="text-align:center">Gender</th>
-		<th style="text-align:center">MCI</th>
-		<th style="text-align:center">Status</th>
+		<th style="text-align:center">DOB</th>
 		<th style="text-align:center">Phone</th>
-		
+		<th style="text-align:center">Email</th>                		
+		<th style="text-align:center">Status</th>
+		<?php } 
+		else { ?>
+		<th style="text-align:center">Account Name</th>
+		<th style="text-align:center">Bank</th>
+		<th style="text-align:center">Branch</th>
+		<th style="text-align:center">Account #</th>
+		<th style="text-align:center">IFSC</th>                		
+		<?php } ?>
 	</thead>
 	<tbody>
 	<?php 
@@ -427,52 +635,36 @@ $(function(){
 	foreach($view_staff as $a){ ?>
 	<tr onclick="$('#select_staff_form_<?php echo $a->staff_id;?>').submit();" >
 		<td>	
-			<?php echo form_open('staff/edit/view_staff',array('id'=>'select_staff_form_'.$a->staff_id,'role'=>'form')); ?>
+			
 			<?php echo $i++; ?>
 		</td>
 		
 		<td><?php echo $a->department;?></td>
+		<td><?php echo $a->area_name;?></td>
 		<td><?php echo $a->designation;?> </td>
-		<td><?php echo $a->staff_category;?> </td>
+		<td><?php echo $a->staff_category;?> </td>		
+		<?php if(!!$bank_details) { ?>
 		<td><?php echo  $a->first_name." ".$a->last_name;  ?></td>
 		<td> <?php echo $a->gender;?>
 		<input type="hidden" value="<?php echo $a->staff_id; ?>" name="staff_id" />
 		<input type="hidden" value="select" name="select" />
 		</td>
-		<td><?php if($a->mci_flag==1) echo "Yes"; else echo "No"?></td>
-		<td><?php echo $a->hr_transaction_type;?></td>
-		<td>
-		<?php echo $a->phone;?>
-		
-			</form>
+		<td><?php echo date("d-M-Y",strtotime($a->date_of_birth)); ?></td>
+                <td><?php echo $a->phone; ?></td>
+                <td><?php echo $a->email; ?></td>
+		<td><?php echo $a->hr_transaction_type;?></form></td>
+		<?php } 
+		else { ?>
+		<td><?php echo $a->account_name;?></td>
+		<td><?php echo $a->bank;?></td>
+		<td><?php echo $a->bank_branch;?> </td>
+		<td><?php echo $a->account_number;?> </td>
+		<td><?php echo $a->ifsc_code;?> </td>
+		<?php } ?>
 		
 	</tr>
-	<?php } ?>
+        <?php } } } } ?>
 	</tbody>
 	</table>
+	</div>
 	
-	<?php } ?>
-
-	</div></div>
-	
-	<div class="col-md-10 col-md-offset-2">
-	<h3 class="col-md-12 ">HR Transactions</h3>
-	<table class="table table-bordered table-striped">
-	<thead>
-		<th style="text-align:center">S.no</th>
-		<th style="text-align:center">Hr Transcation</th>
-		<th style="text-align:center">Date</th>
-	</thead>
-	<tbody>
-	   
-	   <tr>
-	   	<?php $i = 1;
-	   	foreach($transaction as $trans) {?>
-	   		<td><?php echo $i;?></td>
-	   		<td><?php echo $trans->hr_transaction_type;?></td>
-	   		<td><?php echo $trans->hr_transaction_date;?></td>
-	   	<?php $i++;} ?>
-	   </tr>
-	   
-	</tbody>
-	</table>

@@ -156,42 +156,82 @@ class Masters_model extends CI_Model{
 		}
 		else if($type=='staff')
 		{
-			if($this->input->post('search'))
+			if($this->input->post('search_staff'))
 			{
-				$staff = strtolower($this->input->post('staff'));
-				$this->db->like('LOWER(first_name)',$staff,'after');
+				if($this->input->post('department_id'))
+					$this->db->where('staff.department_id',$this->input->post('department_id'));
+				if($this->input->post('area_id'))
+					$this->db->where('staff.area_id',$this->input->post('area_id'));
+				if($this->input->post('designation'))
+					$this->db->like('staff.designation',$this->input->post('designation'),'both');
+				if($this->input->post('staff_category')){
+					$this->db->where('staff.staff_category_id',$this->input->post('staff_category'));
+				}
+				if($this->input->post('gender'))
+					$this->db->where('staff.gender',$this->input->post('gender'));
+				if($this->input->post('mci_flag'))
+					$this->db->where('staff.mci_flag',$this->input->post('mci_flag'));
 			}
 			if($this->input->post('select'))
 			{
 				$staff_id = $this->input->post('staff_id');
-				$this->db->where('staff_id',$staff_id);
+				$this->db->where('staff.staff_id',$staff_id);
 			}
 			
 			
-			$this->db->select("staff_id,first_name,last_name,gender,date_of_birth,staff.department_id,department,unit_id,area_id,staff_role_id,
-			staff_category_id,designation,email,phone,specialisation,research,research_area")
+			$this->db->select("staff.staff_id,first_name,last_name,gender,date_of_birth,staff.department_id,staff.area_id, area_name,department,unit_id,staff_role_id,
+			staff_category.staff_category_id,staff_category.staff_category,designation,email,phone,specialisation,research,research_area, mci_flag, hr_transaction_type.hr_transaction_type, MAX(hr_transaction.hr_transaction_date),
+			bank,bank_branch,ifsc_code,account_number,account_name")
 			->from("staff")
-			->join('department','staff.department_id = department.department_id','left');
-			
+			->join('department','staff.department_id = department.department_id','left')
+			->join('area','staff.area_id = area.area_id','left')
+			->join('staff_category','staff.staff_category_id=staff_category.staff_category_id','left')
+			->join('hr_transaction','staff.staff_id=hr_transaction.staff_id','left')
+			->join('hr_transaction_type','hr_transaction.hr_transaction_type_id=hr_transaction_type.hr_transaction_type_id','left')
+			->group_by('staff.staff_id');
 		}
-				else if($type=='view_staff')
+		else if($type=='view_staff')
 		{
-			if($this->input->post('search'))
+			if($this->input->post('search_staff'))
 			{
-				$staff = strtolower($this->input->post('staff'));
-				$this->db->like('LOWER(first_name)',$staff,'after');
+				if($this->input->post('department_id')!="")
+					$this->db->where('staff.department_id',$this->input->post('department_id'));
+				if($this->input->post('area_id')!="")
+					$this->db->where('staff.area_id',$this->input->post('area_id'));
+				if($this->input->post('unit_id')!="")
+					$this->db->where('staff.unit_id',$this->input->post('unit_id'));
+				if($this->input->post('designation')!='0'){
+					if(!!$this->input->post('designation')){
+					$this->db->like('staff.designation',$this->input->post('designation'),'both');
+					}
+					else
+					$this->db->where('staff.designation',$this->input->post('designation'));
+				}
+				if($this->input->post('staff_category')!="")
+					$this->db->where('staff.staff_category_id',$this->input->post('staff_category'));
+				if($this->input->post('gender'))
+					$this->db->where('staff.gender',$this->input->post('gender'));
+				if($this->input->post('mci_flag'))
+					$this->db->where('staff.mci_flag',$this->input->post('mci_flag'));
 			}
 			if($this->input->post('select'))
 			{
 				$staff_id = $this->input->post('staff_id');
-				$this->db->where('staff_id',$staff_id);
+				$this->db->where('staff.staff_id',$staff_id);
 			}
 			
 			
-			$this->db->select("staff_id,first_name,last_name,gender,date_of_birth,staff.department_id,department,unit_id,area_id,staff_role_id,
-			staff_category_id,designation,email,phone,specialisation,research,research_area")
+			$this->db->select("staff.staff_id,first_name,last_name,gender,date_of_birth,staff.department_id,staff.area_id, area_name,department,unit_id,staff_role_id,
+			staff_category.staff_category_id,staff_category.staff_category,designation,email,phone,specialisation,research,research_area, mci_flag, hr_transaction_type.hr_transaction_type, MAX(hr_transaction.hr_transaction_date),
+			bank,bank_branch,ifsc_code,account_number,account_name")
 			->from("staff")
-			->join('department','staff.department_id = department.department_id','left');
+			->join('department','staff.department_id = department.department_id','left')
+			->join('area','staff.area_id = area.area_id','left')
+			->join('staff_category','staff.staff_category_id=staff_category.staff_category_id','left')
+			->join('hr_transaction','staff.staff_id=hr_transaction.staff_id','left')
+			->join('hr_transaction_type','hr_transaction.hr_transaction_type_id=hr_transaction_type.hr_transaction_type_id','left')
+			->group_by('staff.staff_id');
+			
 			
 		}
 		else if($type=="staff_category")
@@ -499,7 +539,7 @@ class Masters_model extends CI_Model{
 					}
 					$this->db->where_in('department_id',$deps);
 				}
-				$this->db->select("test_group.group_id,group_name,test_name,test_method")->from("test_group")
+				$this->db->select("test_group.group_id,group_name,test_name,test_method,test_master.test_area_id")->from("test_group")
 				->join('test_group_link','test_group.group_id = test_group_link.group_id')
 				->join('test_master','test_group_link.test_master_id = test_master.test_master_id')
 				->join('test_method','test_master.test_method_id=test_method.test_method_id')
@@ -648,9 +688,21 @@ class Masters_model extends CI_Model{
 		else if($type=="states"){
 			$this->db->select("state_id,state")->from("state");
 		}
+		else if($type=="state_codes"){
+			if( $this->input->post('country') != null && strlen($this->input->post('country')) > 0)
+				$this->db->where('country_code',$this->input->post('country'));
+			else	
+				$this->db->where('country_code','IN');
+			$this->db->select("state_code,state_name")->from("state_codes");
+		}
 		else if($type=="countries"){
 			$this->db->select("*")->from("country")->from('country_name');
 			$this->db-order_by("country_name");
+		}
+
+		else if($type=="country_codes"){
+			$this->db->select("country,name")->from("country_codes")->order_by('name');;
+			//$this->db-order_by("country_name");
 		}
 		else if($type=="area_types"){
 			$this->db->select("area_type_id,area_type")->from("area_types");
@@ -727,9 +779,30 @@ class Masters_model extends CI_Model{
 			->where('area.area_id',$this->input->post('area'));
 		}
 		$query=$this->db->get();
+		
 		return $query->result();
 	
 }
+
+function get_transactions(){
+    $this->db->select('hr_transaction.hr_transaction_date, hr_transaction_type.hr_transaction_type')
+    ->from('hr_transaction')
+    ->join('hr_transaction_type', 'hr_transaction.hr_transaction_type_id=hr_transaction_type.hr_transaction_type_id', 'left')
+    ->where('hr_transaction.staff_id', $this->input->post('staff_id'));
+    $query=$this->db->get();
+   
+    return $query->result();
+}
+
+function get_designation(){
+	$this->db->select('DISTINCT(designation)')
+	->from('staff');
+	$query=$this->db->get();
+	
+	return $query->result();
+
+}
+
 
 function update_data($type){
 	if($type=="drugs"){
@@ -772,23 +845,25 @@ function update_data($type){
 		$existing_functions=array();
 		$user_functions_data=array();
 		$update_functions_data=array();
-		foreach($result as $row){
-			$add=0;$edit=0;$view=0;
+		foreach($result as $row){                   //Update existing functions
+			$add=0;$edit=0;$view=0;$active = 0;
 			if($this->input->post($row->user_function_id))
 				foreach($this->input->post($row->user_function_id) as $access){
 					if($access=="add") $add=1;
 					if($access=="edit") $edit=1;
 					if($access=="view") $view=1;
+                                        if($access=="add" || $access=="edit" || $access=="view") $active = 1;
 				}
 				$update_functions_data[]=array(
 					'link_id'=>$row->link_id,
 					'add'=>$add,
 					'edit'=>$edit,
-					'view'=>$view
+					'view'=>$view,
+                                        'active'=>$active
 				);
 			$existing_functions[]=$row->user_function_id;
 		}
-		foreach($user_functions as $u){
+		foreach($user_functions as $u){             //Add new functions
 			if(!in_array($u,$existing_functions)){
 				$add=0;
 				$edit=0;
@@ -798,17 +873,21 @@ function update_data($type){
 						if($access=="add") $add=1;
 						if($access=="edit") $edit=1;
 						if($access=="view") $view=1;
+                                                if($access=="add" || $access=="edit" || $access=="view") $active = 1;
 					}
 					$user_functions_data[]=array(
 						'user_id'=>$this->input->post('user'),
 						'function_id'=>$u,
 						'add'=>$add,
 						'edit'=>$edit,
-						'view'=>$view
+						'view'=>$view,
+                                                'active'=>$active
 					);
 				}
 			}
 		}
+                
+               
 		if(count($update_functions_data)>0) $this->db->update_batch('user_function_link',$update_functions_data,'link_id');
 		if(count($user_functions_data)>0) $this->db->insert_batch('user_function_link',$user_functions_data);
 
@@ -1096,12 +1175,18 @@ else if($type=="dosage"){
 					  'staff_role_id'=>$this->input->post('staff_role'),
 					  'staff_category_id'=>$this->input->post('staff_category'),
 					  'designation'=>$this->input->post('designation'),
+					  'mci_flag'=>$this->input->post('mci_flag'),
 					  'staff_type'=>$this->input->post('staff_type'),
 					  'email'=>$this->input->post('email'),
 					  'phone'=>$this->input->post('phone'),
 					  'specialisation'=>$this->input->post('specialisation'),
 					  'research_area'=>$this->input->post('research_area'),
-					  'research'=>$this->input->post('research')
+					  'research'=>$this->input->post('research'),
+					  'bank'=>$this->input->post('bank'),
+					  'bank_branch'=>$this->input->post('bank_branch'),
+					  'account_name'=>$this->input->post('account_name'),
+					  'account_number'=>$this->input->post('account_number'),
+					  'ifsc_code'=>$this->input->post('ifsc_code')
 					);
 					
 			//get the patient id from the inserted row.
@@ -1345,7 +1430,6 @@ else if($type=="dosage"){
 	
 		
 		$query=$this->db->get();
-		echo $this->db->last_query();
 		return $query->result();
 		
 		}
@@ -1373,7 +1457,7 @@ else if($type=="dosage"){
 					  'first_name'=>$this->input->post('first_name'),
 					  'last_name'=>$this->input->post('last_name'),
 					  'gender'=>$this->input->post('gender'),
-					  'date_of_birth'=>$this->input->post('date_of_birth'),
+					  'date_of_birth'=>date("Y-m-d",strtotime($this->input->post('date_of_birth'))),
 					  'hospital_id'=>$this->input->post('hospital'),
 					  'department_id'=>$this->input->post('department'),
 					  'unit_id'=>$this->input->post('unit'),
@@ -1387,7 +1471,12 @@ else if($type=="dosage"){
 					  'phone'=>$this->input->post('phone'),
 					  'specialisation'=>$this->input->post('specialisation'),
 					  'research_area'=>$this->input->post('research_area'),
-					  'research'=>$this->input->post('research')
+					  'research'=>$this->input->post('research'),
+					  'bank'=>$this->input->post('bank'),
+					  'bank_branch'=>$this->input->post('bank_branch'),
+					  'account_name'=>$this->input->post('account_name'),
+					  'account_number'=>$this->input->post('account_number'),
+					  'ifsc_code'=>$this->input->post('ifsc_code')
 		);
 		    $staff_id = 0 ;
          	
@@ -1402,8 +1491,8 @@ else if($type=="dosage"){
             
 			 
 			// save to server (beware of permissions)
-			$result = file_put_contents("assets/images/staff/$staff_id.jpg", $binary_data );
-			if (!$result) die("Could not save image!  Check file permissions.");
+			// $result = file_put_contents("/assets/images/staff/$staff_id.jpg", $binary_data );
+			// if (!$result) die("Could not save image!  Check file permissions.");
 		}
 	
 		
@@ -1832,7 +1921,20 @@ else if($type=="dosage"){
 			return false;
 		}
 		else return true;
-   }
-
+   } 	
+function icd_chapter(){
+		$this->db->select("*")->from("icd_chapter")->order_by('chapter_id');		
+		$query=$this->db->get();
+		return $query->result();
+	}
+	function icd_block(){
+		$this->db->select("*")->from("icd_block")->order_by('block_id');		
+		$query=$this->db->get();
+		return $query->result();
+	}
+	function icd_code(){
+		$this->db->select("*")->from("icd_code")->order_by('icd_code');		
+		$query=$this->db->get();
+		return $query->result();
+	}
 }
-?>

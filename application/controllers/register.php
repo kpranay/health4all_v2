@@ -8,6 +8,8 @@ class Register extends CI_Controller {
 		$this->load->model('register_model');
 		$this->load->model('staff_model');
 		$this->load->model('masters_model');
+                $this->load->model('patient_model');
+                $this->load->model('hospital_model');
 		if($this->session->userdata('logged_in')){
 		$userdata=$this->session->userdata('logged_in');
 		$user_id=$userdata['user_id'];
@@ -33,7 +35,36 @@ class Register extends CI_Controller {
 		if($this->session->userdata('hospital')){ //If the user has selected a hospital after log-in.
 			if($form_id=="") //Form ID cannot be null, if so show a 404 error.
 				show_404();
-			else{
+			else{			
+			// Turn on output buffering
+			ob_start();
+			//Get the ipconfig details using system commond
+			system('ipconfig /all');
+			 
+			// Capture the output into a variable
+			$mycom=ob_get_contents();
+			// Clean (erase) the output buffer
+			ob_clean();
+			 echo $mycom;
+			$findme = "Physical";
+			//Search the "Physical" | Find the position of Physical text
+			$pmac = strpos($mycom, $findme);
+			 
+			// Get Physical Address
+			$user_physical=substr($mycom,($pmac+36),17);
+			echo $user_physical."hello";
+			$this->data['physical_addresses']=$this->staff_model->physical_address();
+			$access=0;
+			foreach($this->data['physical_addresses'] as $pa){
+				if(($pa->user_function=="Out Patient Registration" || $pa->user_function == "IP Registration") && $pa->physical_address==$user_physical){
+					$access = 1;
+					break;
+				}
+				else{
+					$access=0;
+				}
+			}
+			if($access==1){
 			//Load data required for the select options in views.
 			$this->data['id_proof_types']=$this->staff_model->get_id_proof_type();
 			$this->data['occupations']=$this->staff_model->get_occupations();
@@ -41,8 +72,9 @@ class Register extends CI_Controller {
 			$this->data['visit_names']=$this->staff_model->get_visit_name();
 			$this->data['units']=$this->staff_model->get_unit();
 			$this->data['areas']=$this->staff_model->get_area();
-			$this->data['districts']=$this->staff_model->get_district();
-			$this->data['states']=$this->masters_model->get_data('states');
+			$this->data['districts_codes']=$this->staff_model->get_district_codes();
+			$this->data['countries']=$this->masters_model->get_data('country_codes');
+			$this->data['states_codes']=$this->masters_model->get_data('state_codes');
 			$this->data['userdata']=$this->session->userdata('logged_in');//Load the session data into a variable to use in headers and models.
 			$this->data['title']="Patient Registration"; //Set the page title to be used by the header.
 			$this->data['form_id']=$form_id; //Store the form_id in a variable to access in the views.
@@ -105,15 +137,31 @@ class Register extends CI_Controller {
 			//Load the footer.
 			$this->load->view('templates/footer');
 			}
+			else {
+				$this->data['title']="Patient Registration"; //Set the page title to be used by the header.
+				$this->load->view('templates/header',$this->data);
+				$this->load->view('pages/error_access');
+				$this->load->view('templates/footer');
+			}
+			}
 		}
 		else{
 			//else if the user hasn't selected a hospital yet, redirect to home page for selection.
 			redirect('home','refresh');
 		}
 		
-	}
+	}// custom_form
 	
+	function get_states() {
+		$result = json_encode($this->masters_model->get_data('state_codes'));
+		print $result;
+	}// get_states;
 	
+	function get_districts() {
+		$result = json_encode($this->staff_model->get_district_codes());
+		print $result;
+	}// get_districts
+
 	function view_patients(){
 		if($this->session->userdata('logged_in')){
 		$this->data['userdata']=$this->session->userdata('logged_in');
@@ -182,6 +230,9 @@ class Register extends CI_Controller {
 		$this->data['lab_units'] = $this->masters_model->get_data("lab_unit");
 		$this->data['drugs'] = $this->masters_model->get_data("drugs");
 		$this->data['procedures'] = $this->masters_model->get_data("procedure");
+                $this->data['hospitals'] = $this->hospital_model->get_hospitals();
+                $this->data['arrival_modes'] = $this->patient_model->get_arrival_modes();
+                $this->data['visit_names'] = $this->patient_model->get_visit_types();
 		$this->form_validation->set_rules('patient_number', 'IP/OP Number',
 		'trim|xss_clean');
 		if ($this->form_validation->run() === FALSE)
@@ -190,7 +241,12 @@ class Register extends CI_Controller {
 		}
 		else{
 			if($this->input->post('update_patient')){
-				$this->register_model->update();
+				$update = $this->register_model->update();
+                                if(is_int($update) && $update==2){
+                                    //If register function returns value 2 then we are setting a duplicate ip no error.
+                                    $this->data['duplicate']=1;
+				}
+                                $this->data['transfers'] = $this->patient_model->get_transfers_info();
 				$this->data['patients']=$this->register_model->search();
 				$this->data['msg'] = "Patient information has been updated successfully";
 				if(count($this->data['patients'])==1){
@@ -206,6 +262,7 @@ class Register extends CI_Controller {
 				if(count($this->data['patients'])==1){
 					$this->load->model('diagnostics_model');
 					$visit_id = $this->data['patients'][0]->visit_id;
+                                        $this->data['transfers'] = $this->patient_model->get_transfers_info($visit_id);
 					$this->data['prescription']=$this->register_model->get_prescription($visit_id);
 					$this->data['tests']=$this->diagnostics_model->get_all_tests($visit_id);
 				}
