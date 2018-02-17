@@ -35,10 +35,11 @@ class Staff_model extends CI_Model{
 	
 	//user_hospital() takes user ID as parameter and returns a list of all the hospitals the user has access to.	
 	function user_hospital($user_id){
-		$this->db->select('hospital.hospital_id,hospital,description,place,district,state,logo')->from('user')
+		$this->db->select('hospital.hospital_id,hospital,hospital_short_name,description,place,district,state,logo')->from('user')
 		->join('user_hospital_link','user.user_id=user_hospital_link.user_id')
 		->join('hospital','user_hospital_link.hospital_id=hospital.hospital_id')
-		->where('user_hospital_link.user_id',$user_id);
+		->where('user_hospital_link.user_id',$user_id)
+		->order_by('hospital');
 		$query=$this->db->get();
 		return $query->result();
 	}
@@ -61,20 +62,36 @@ class Staff_model extends CI_Model{
 	
 	//get_department() selects the clinical departments from the database and returns the result
 	function get_department($clinical=1){
-		$this->db->select("department_id,department")->from("department")->where('clinical',$clinical)->order_by('department');
+		$hospital=$this->session->userdata('hospital');
+		$this->db->where('hospital_id',$hospital['hospital_id']);
+		if($clinical != -1){
+			$this->db->where('clinical',$clinical);
+		}
+		$this->db->select("department_id,department")->from("department")->order_by('department');
+		$query=$this->db->get();
+		return $query->result();
+	}
+	//get_department() selects the clinical departments from the database and returns the result
+	function get_list_department(){
+		$hospital=$this->session->userdata('hospital');
+		$this->db->select("list_department_id,department")->from("list_department")->order_by('department');
 		$query=$this->db->get();
 		return $query->result();
 	}
 	
 	//get_area() selects the areas from the database and returns the result
 	function get_area(){
-		$this->db->select("area_id,department_id,area_name")->from("area");
+		$hospital=$this->session->userdata('hospital');
+		$this->db->where('hospital_id',$hospital['hospital_id']);
+		$this->db->select("area_id,area.department_id,area_name")->from("area")->join('department','area.department_id = department.department_id');
 		$query=$this->db->get();
 		return $query->result();
 	}
 	//get_unit() selects the units from the database and returns the result
 	function get_unit(){
-		$this->db->select("department_id,unit_id,unit_name")->from("unit");
+		$hospital=$this->session->userdata('hospital');
+		$this->db->where('hospital_id',$hospital['hospital_id']);
+		$this->db->select("unit.department_id,unit_id,unit_name")->from("unit")->join('department','unit.department_id = department.department_id');
 		$query=$this->db->get();
 		return $query->result();
 	}
@@ -117,15 +134,45 @@ class Staff_model extends CI_Model{
 		return $query->result();
 	}
 	//get_staff() selects the staff details from the database and returns the result
-	function get_staff(){
+	function get_staff($department=0){
+		if(!!$department)
+			$this->db->where('department',$department);
 		$this->db->select("staff_id,CONCAT(IF(first_name!='',first_name,''),' ',IF(last_name!='',last_name,'')) staff_name,department",false)
 		->from("staff")
 		->join('department','staff.department_id=department.department_id');
 		$query=$this->db->get();
 		return $query->result();
 	}
+	function get_transport_log($status=0,$transport_type="p"){
+		if($status=="active") {
+			$this->db->where('end_date_time','0000-00-00 00:00:00');
+		}
+		if($this->input->post('selected_patient')){
+			$this->db->where('visit_id',$this->input->post('selected_patient'));
+		}
+		else if($this->input->post('visit_id')){
+			$this->db->where('visit_id',$this->input->post('visit_id'));
+		}
+		if($transport_type=="np"){
+			$this->db->where('transport_type',2);
+		}
+		else $this->db->where('transport_type',1);
+		$this->db->select("transport.*,fa.area_name from_area, ta.area_name to_area,CONCAT(IF(first_name!='',first_name,''),' ',IF(last_name!='',last_name,'')) transported_by",false)
+		->from("transport")
+		->join('area fa','transport.from_area_id=fa.area_id')
+		->join('area ta','transport.to_area_id=ta.area_id')
+		->join('staff','transport.staff_id=staff.staff_id');
+		$query=$this->db->get();
+		return $query->result();
+	}
+	function get_transport_defaults(){
+		$this->db->select('primary_key,default_value')->from('default_setting')->where_in('primary_key',array('from_area_id','to_area_id','from_department_id','to_department_id'));
+		$query = $this->db->get();
+		return $query->result();
+	}
 	//upload_form() takes the post variables and inserts data into the form and form_layout tables
 	function upload_form(){
+		$hospital = $this->session->userdata('hospital');
 		//storing all the post variables and json variables into local variables.
 		$fields=json_decode($this->input->post('fields'));
 		$form_name=$this->input->post('form_name');
@@ -138,7 +185,8 @@ class Staff_model extends CI_Model{
 			'form_name'=>$form_name,
 			'form_type'=>$form_type,
 			'num_columns'=>$columns,
-			'print_layout_id'=>$print_layout
+			'print_layout_id'=>$print_layout,
+			'hospital_id'=>$hospital['hospital_id']
 		);
 		$this->db->trans_start(); //Transaction starts
 		$this->db->insert('form',$form_data); //Insert the form data array into the "form" table
@@ -176,7 +224,8 @@ class Staff_model extends CI_Model{
 	//get_forms() takes a parameter $form_type, selects the forms with the given form type 
 	//from the database and returns the result
 	function get_forms($form_type){
-		$this->db->select("form_id,form_name")->from("form")->where("form_type",$form_type);
+		$hospital = $this->session->userdata('hospital');
+		$this->db->select("form_id,form_name")->from("form")->where("form_type",$form_type)->where('hospital_id',$hospital['hospital_id']);
 		$query=$this->db->get();
 		return $query->result();
 	}
@@ -256,7 +305,9 @@ class Staff_model extends CI_Model{
 		$userdata=$this->session->userdata('hospital');
 		if($hospital_id==0) $hospital_id=$userdata['hospital_id'];
 		
-		$this->db->select("*")->from("staff")->where("department_id","4")->where("hospital_id",$hospital_id);
+		$this->db->select("*")->from("staff")
+		->join('department','staff.department_id = department.department_id')
+		->where("department","Blood Bank")->where("staff.hospital_id",$hospital_id);
 		$query=$this->db->get();
 		return $query->result();
 	}

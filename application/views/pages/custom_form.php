@@ -190,8 +190,22 @@ pri.print();
 				<?php if($update){ ?>
 				<input type="text" name="visit_id" class="form-control sr-only" size="3" value="<?php echo $patient->visit_id;?>" readonly />
 				<?php } ?>
-				<input type="text" name="hosp_file_no" <?php if($update){?> value="<?php echo $patient->hosp_file_no;?>" <?php } ?> class="form-control" size="5" required />
-				<?php } ?>
+                                <input type="text" name="hosp_file_no" <?php if(!$update){ ?> value='<?php //echo $ip_count[0]->count; ?>' <?php } ?><?php if($update){?> readonly value="<?php echo $patient->hosp_file_no;?>" <?php } ?> class="form-control" size="5" required />
+                               
+				<?php } 
+                                    foreach($fields as $field){
+					if($field->field_name == "patient_id_manual")
+					{
+					
+                                    ?>
+						<label class="control-label">Patient ID Manual<?php if($field->mandatory) { ?><span class="mandatory">*</span><?php } ?></label>
+						<input type="text" name="patient_id_manual" class="form-control" placeholder="Patient ID Manual" value="<?php if($patient) echo $patient->patient_id_manual;?>" <?php if($field->mandatory) echo "required"; if($form_type=="IP") echo "disabled";?> />
+						
+                                    <?php 
+						break;
+					}
+                                    }?>
+                                
 				<label class="control-label">Date</label>
 				<?php 
 					if($update) $date = date("d-M-Y",strtotime($patient->admit_date));
@@ -213,16 +227,7 @@ pri.print();
 		<div class="panel-body">
 			<?php
 			foreach($fields as $field){
-				switch($field->field_name){	
-                                   case "patient_id_manual" ?>
-                                        <div class="<?php echo $class;?>">
-						<div class="form-group">
-						<label class="control-label">Patient ID Manual<?php if($field->mandatory) { ?><span class="mandatory">*</span><?php } ?></label>
-						<input type="text" name="patient_id_manual" class="form-control" placeholder="Patient ID Manual" value="<?php if($patient) echo $patient->patient_id_manual;?>" <?php if($patient && $patient->patient_id_manual !='') echo 'readonly'?> <?php if($field->mandatory) echo "required"; ?> />
-						</div>
-					</div>
-                                <?php
-                                    break;
+				switch($field->field_name){
 				case "first_name": ?>   
 					<div class="<?php echo $class;?>">
 						<div class="form-group">
@@ -306,8 +311,8 @@ pri.print();
 					case "country" : ?>
 					<div class="<?php echo $class;?>">
 						<div class="form-group">
-						<label class="control-label">Country<?php if($mandatory) { ?><span class="mandatory" >*</span><?php } ?></label>
-						<select name="country" id="country" onchange="getStates()" class="form-control" <?php if($mandatory) echo "required"; ?> style="max-width:200px !important;">
+						<label class="control-label">Country<?php if($field->mandatory) { ?><span class="mandatory" >*</span><?php } ?></label>
+						<select name="country" id="country" onchange="getStates()" class="form-control" <?php if($field->mandatory) echo "required"; ?> style="max-width:200px !important;">
 						<option value="">--Select--</option>
 						<?php  						
 						foreach($countries as $country){
@@ -346,11 +351,17 @@ pri.print();
 						<label class="control-label">District<?php if($field->mandatory) { ?><span class="mandatory" >*</span><?php } ?></label>
 						<select name="district" id="district" class="form-control" <?php if($field->mandatory) echo "required"; ?> style="width:200px;">
 						<option value="">--Select--</option>
-						<?php  						
+
+						<?php /* 						
 						foreach($districts_codes as $district){
 							echo "<option value='".$district->place_code."'";
 							if($district->place_code==$this->session->userdata('district_id')) echo " selected ";
 							echo ">".$district->place_name."</option>";
+						} */
+                                                foreach($districts as $district){
+							echo "<option value='".$district->district_id."'";
+							if($patient) if($district->district_id==$patient->district_id) echo " selected ";
+							echo ">".$district->district."</option>";
 						}
 						?>
 						</select>
@@ -1107,6 +1118,7 @@ pri.print();
 									<thead>
 										<tr>
 											<th>#</th>
+											<th>Hospital</th>
 											<th>Visit Type</th>
 											<th>Name</th>
 											<th>Age</th>
@@ -1129,6 +1141,7 @@ pri.print();
 												</form>
 												<?php echo $i++; ?>
 											</td>
+											<td><?php echo $patient->hospital; ?></td>
 											<td><?php echo $patient->visit_type; ?></td>
 											<td><?php echo $patient->name; ?></td>
 											<td>
@@ -1147,7 +1160,18 @@ pri.print();
 										</tr>
 										<?php } ?>
 									</tbody>
-								</table>	
+								</table>
+								<div class="row text-center">
+									<?php echo form_open("register/custom_form/$form_id",array("role"=>"form","class"=>"form-custom")) ?>
+									<input type="text" class="sr-only" value="<?php echo $this->input->post('search_patient_id');?>" name="search_patient_id" />
+									<input type="text" class="sr-only" value="<?php echo $this->input->post('search_patient_name');?>" name="search_patient_name" />
+									<input type="text" class="sr-only" value="<?php echo $this->input->post('search_op_number');?>" name="search_op_number" />
+									<input type="text" class="sr-only" value="<?php echo $this->input->post('search_ip_number');?>" name="search_ip_number" />
+									<input type="text" class="sr-only" value="<?php echo $this->input->post('search_phone');?>" name="search_phone" />
+									<input type="text" class="sr-only" value="<?php echo $this->input->post('search_year');?>" name="search_year" />
+									<input type="text" class="sr-only" value="1" name="load_other_hospitals" />
+									<input type="submit" value="Search All Hospitals" name="search_patients" class="btn btn-primary btn-sm text-center">
+									</form>
 							<?php }  else echo "No patients matched your search.";?>
 						</div>
 					</div>

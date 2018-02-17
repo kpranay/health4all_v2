@@ -5,7 +5,7 @@
 				<img style="float:right" style="margin-top:-20px" src="<?php echo base_url();?>assets/images/ap-logo.png" width="60px" />
 				<img style="float:left" src="<?php echo base_url();?>assets/images/<?php $hospital=$this->session->userdata('hospital');echo $hospital['logo'];?>" width="60px" />
 				<div style="float:middle;text-align:center">
-				<b>Government of Telangana</b><br />
+			<!--	<b>Government of Telangana</b><br /> -->
 				<font size="4"><?php echo $hospital['hospital'];?></font>
 					<?php echo $hospital['description'];?> 
 					@ 
