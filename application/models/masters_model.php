@@ -10,17 +10,13 @@ class Masters_model extends CI_Model{
 		}
 		
 		else if($type=="hospital"){
-			$this->db->select("hospital_id,hospital")->from("hospital");
+			$this->db->select("hospital_id,hospital")->from("hospital")->order_by('hospital');
 		}
 		else if($type=="department"){
 		 $this->db->where('hospital_id',$hospital['hospital_id']);
 		$this->db->select("department_id,hospital_id,department")->from("department")
 		 ->order_by('department');
-		}
-		
-	
-		
-		
+		}		
 		else if($type=="area"){
 			if($hospitals!=0){
 				$hosp_id=array();
@@ -44,7 +40,10 @@ class Masters_model extends CI_Model{
 			$this->db->select("*")->from("icd_code")->order_by('code_title');
 		}
 		else if($type=="user"){
-			$this->db->select("hospital.hospital,user.user_id,username,password,user.staff_id,first_name,last_name,designation,phone,department")
+			$hospital_id = $this->session->userdata('hospital')['hospital_id'];
+			if($hospital_id != '')
+					$this->db->where('staff.hospital_id', $hospital_id);
+			$this->db->select("hospital.hospital,user.user_id,username,password,user.staff_id,first_name,last_name,gender, specialisation, email, designation,phone,department")
 			->from("user")
 			->join('staff','user.staff_id=staff.staff_id')
 			->join('hospital','staff.hospital_id=hospital.hospital_id')
@@ -184,7 +183,11 @@ class Masters_model extends CI_Model{
 			$this->db->select("drug_type_id,drug_type,description")->from("drug_type");
 		}
 		else if($type=="drugs"){
-			$this->db->select("item_id,item_name")->from("item")->order_by('item_name');
+		//	$this->db->select("item_id,item_name")->from("item")->order_by('item_name');
+			$this->db->select("generic_item_id,generic_name, item_form.item_form")
+					->from("generic_item")
+					->join('item_form', 'item_form.item_form_id = generic_item.form_id', 'left')
+					->order_by('generic_name');	
 		}
 		
 		else if($type=="dosage"){
@@ -1577,5 +1580,11 @@ else if($type=="dosage"){
 		else return true;
    }
 
+   function add_test_name() {
+	   $hospital = $this->session->userdata('hospital');
+	   $test_area = $this->input->post('test_area');
+	   $test_method = $this->input->post('test_method');
+	   $test_name = $this->input->post('test_name');
+   }
 }
 ?>

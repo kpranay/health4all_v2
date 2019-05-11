@@ -15,6 +15,26 @@ class Helpline_model extends CI_Model{
 		$call_type = $this->input->get('CallType');
 		$recording_url = $this->input->get('RecordingUrl');
 		$dial_whom_number = $this->input->get('DialWhomNumber');
+
+		$hospital_id = 0;
+		$helpline_category = 0;
+		$helpline_caller_type = 0;
+		$visit_type = "";
+		$resolution_status = 0;
+		$resolution_date_time = 0;
+		if($call_type == 'voicemail'){
+			$this->db->select('*')->from('helpline_numbers')->where('number',$from_number);
+			$query = $this->db->get();
+			$result = $query->row();
+			if(!!$result){
+				$hospital_id = $result->hospital_id;
+				$helpline_category = $result->helpline_category_id;
+				$helpline_caller_type = $result->caller_type_id;
+				$visit_type = $result->visit_type;
+				$resolution_status = $result->resolution_status_id;
+				$resolution_date_time = date("Y-m-d H:i:s");
+			}
+		}
 		$data = array(
 			'callsid'=>$callsid,
 			'from_number' => $from_number,
@@ -27,7 +47,13 @@ class Helpline_model extends CI_Model{
 			'call_type' => $call_type,
 			'recording_url' => $recording_url,
 			'dial_whom_number' => $dial_whom_number,
-			'create_date_time' => date("Y-m-d H:i:s")
+			'create_date_time' => date("Y-m-d H:i:s"),
+			'hospital_id' => $hospital_id,
+			'call_category_id' => $helpline_category,
+			'caller_type_id' => $helpline_caller_type,
+			'ip_op' => $visit_type,
+			'resolution_status_id' => $resolution_status,
+			'resolution_date_time' => $resolution_date_time
 		);
 
 		if($this->db->insert('helpline_call',$data)){
@@ -74,7 +100,7 @@ class Helpline_model extends CI_Model{
 				$resolution_date_time = date("Y-m-d H:i:s",strtotime($this->input->post('resolution_date_'.$call)." ".$this->input->post('resolution_time_'.$call)));
 			}
 			else $resolution_date_time = 0;
-			echo $this->input->post('group_'.$call);
+		//	echo $this->input->post('group_'.$call);
 			$data[]=array(
 				'call_id'=>$call,
 				'caller_type_id'=>$this->input->post("caller_type_".$call),
@@ -99,8 +125,8 @@ class Helpline_model extends CI_Model{
 			$this->db->trans_rollback();
 			return false;
 		}
-
 	}
+
 	function send_email(){
 		$this->load->library('email');
 		$user = $this->session->userdata('logged_in');
@@ -117,6 +143,10 @@ class Helpline_model extends CI_Model{
 		$call_category = $this->input->post('call_category');
 		$hospital = $this->input->post('hospital');
 		$recording = $this->input->post('recording');
+		$helpline_to_num = $this->input->post('helpline_to_num');
+		$helpline_note = $this->input->post('helpline_note');
+		$helpline_to_num = trim($helpline_to_num);
+		$helpline_note = trim($helpline_note);
 		$from_name = "Hospital Helpline";
 		if($to_email!=''){
 		$subject="Helpline call #$call_id - ";
@@ -125,7 +155,7 @@ class Helpline_model extends CI_Model{
 		if(!!$caller_type) $subject .= "by ".$caller_type." ";
 		if(!!$patient) $subject .= "regarding ".$patient." ";
 		if(!!$greeting){ $body = $greeting; } else $body = "Hi,";
-		$body.="<br /><br />This call information from Hospital Helpline (040 - 39 56 53 39) is being escalated for your information and intervention.<br /><br />";
+		$body.="<br /><br />This call information from $helpline_note ($helpline_to_num) is being escalated for your information and intervention.<br /><br />";
 		$body.="<b>Call ID</b>: $call_id <br />";
 		$body.="<b>Call Time</b>: ".date("d-M-Y, g:iA",strtotime($call_date))." <br />";
 		$body.="<b>Call</b>: ";
@@ -137,8 +167,8 @@ class Helpline_model extends CI_Model{
 		$body.="<br />";
 		$body.="<b>Call Information</b>: $note <br />";
 		$body.="<b>Recording</b>: <a href=\"$recording\">Click Here</a><br /><br />";
-		$body.="We request you to give your input regarding this call by calling the helpline 040 - 39 56 53 39 or by replying to this email.<br /><br />";
-		$body.="With Regards, <br />Hospital Helpline Team";
+		$body.="We request you to give your input regarding this call by calling the helpline $helpline_to_num or by replying to this email.<br /><br />";
+		$body.="With Regards, <br />$helpline_note Helpline Team";
 		$mailbody="
 		<div style='width:90%;padding:5px;margin:5px;font-style:\"Trebuchet MS\";border:1px solid #eee;'>
 		<br />$body
@@ -183,10 +213,26 @@ class Helpline_model extends CI_Model{
 
 	function get_emails(){
 		if($this->input->post('from_date') && $this->input->post('to_date')){
-			$this->db->where('(DATE(start_time) BETWEEN "'.date("Y-m-d",strtotime($this->input->post('from_date'))).'" AND "'.date("Y-m-d",strtotime($this->input->post('to_date'))).'")');
+			$from_date = date("Y-m-d",strtotime($this->input->post("from_date")));
+			$to_date = date("Y-m-d",strtotime($this->input->post("to_date")));
+			$this->db->where('(date(start_time) BETWEEN "'.$from_date.'" AND "'.$to_date.'")');
 		}
-		else
-			$this->db->where('DATE(start_time)',date("Y-m-d"));
+		else if($this->input->post('from_date') || $this->input->post('to_date')){
+			$from_date;
+			$to_date;
+			if($this->input->post('from_date')){
+				$from_date = date("Y-m-d",strtotime($this->input->post("from_date")));
+				$to_date = $this->db->where('date(start_time)',date("Y-m-d"));
+			}
+			if($this->input->post('to_date')){
+				$to_date = date("Y-m-d",strtotime($this->input->post("to_date")));
+				$from_date = $this->db->where('date(start_time)',date("Y-m-d"));
+			}
+			$this->db->where('(date(start_time) BETWEEN "'.$from_date.'" AND "'.$to_date.'")');
+		}
+		else{
+			$this->db->where('date(start_time)',date("Y-m-d"));
+		}
 		$this->db->select('helpline_email.*')->from('helpline_email')->join('helpline_call','helpline_email.call_id = helpline_call.call_id')
 		->order_by('email_date_time','desc');
 		$query = $this->db->get();
@@ -194,16 +240,62 @@ class Helpline_model extends CI_Model{
 	}
 	function get_calls(){
 		if($this->input->post('date')){
-			$this->db->where('DATE(start_time)',date("Y-m-d",strtotime($this->input->post('date'))));
+			$date = date("Y-m-d",strtotime($this->input->post("date")));
+			$this->db->where('date(start_time)',$date);
 		}
-		else
-			$this->db->where('DATE(start_time)',date("Y-m-d"));
-		$this->db->select('helpline_call.*,group_name,caller_type,call_category,resolution_status,hospital')->from('helpline_call')
+		else{
+			$this->db->where('date(start_time)',date("Y-m-d"));
+		}
+		if($this->input->post('helpline_id')){
+			$this->db->where('helpline.helpline_id',$this->input->post('helpline_id'));
+		}
+		$this->db->select('helpline_call.*, helpline_receiver.short_name as short_name, group_name,caller_type,call_category,resolution_status,hospital, helpline.note as line_note')->from('helpline_call')
+		->join('helpline', 'helpline_call.to_number=helpline.helpline','left')	// 6 Dec 18 -> gokulakrishna@yousee.in
+		->join('helpline_receiver','helpline_call.dial_whom_number = helpline_receiver.phone','left')
 		->join('helpline_caller_type','helpline_call.caller_type_id = helpline_caller_type.caller_type_id','left')
 		->join('helpline_call_category','helpline_call.call_category_id = helpline_call_category.call_category_id','left')
 		->join('helpline_call_group','helpline_call.call_group_id = helpline_call_group.call_group_id','left')
 		->join('helpline_resolution_status','helpline_call.resolution_status_id = helpline_resolution_status.resolution_status_id','left')
 		->join('hospital','helpline_call.hospital_id = hospital.hospital_id','left')
+		->where('from_number NOT IN (SELECT number FROM helpline_numbers)')
+		->order_by('start_time','desc');
+		$query = $this->db->get();
+		return $query->result();
+	}
+	function get_voicemail_calls(){
+		if($this->input->post('from_date') && $this->input->post('to_date')){
+			$from_date = date("Y-m-d",strtotime($this->input->post("from_date")));
+			$to_date = date("Y-m-d",strtotime($this->input->post("to_date")));
+			$this->db->where('(date(start_time) BETWEEN "'.$from_date.'" AND "'.$to_date.'")');
+		}
+		else if($this->input->post('from_date') || $this->input->post('to_date')){
+			$from_date;
+			$to_date;
+			if($this->input->post('from_date')){
+				$from_date = date("Y-m-d",strtotime($this->input->post("from_date")));
+				$to_date = $this->db->where('date(start_time)',date("Y-m-d"));
+			}
+			if($this->input->post('to_date')){
+				$to_date = date("Y-m-d",strtotime($this->input->post("to_date")));
+				$from_date = $this->db->where('date(start_time)',date("Y-m-d"));
+			}
+			$this->db->where('(date(start_time) BETWEEN "'.$from_date.'" AND "'.$to_date.'")');
+		}
+		else{
+			$this->db->where('date(start_time)',date("Y-m-d"));
+		}
+		if($this->input->post('helpline_id')){
+			$this->db->where('helpline.helpline_id',$this->input->post('helpline_id'));
+		}
+		$this->db->select('helpline_call.*,group_name,caller_type,call_category,resolution_status,hospital')->from('helpline_call')
+		->join('helpline', 'helpline_call.to_number=helpline.helpline','left')	// 6 Dec 18 -> gokulakrishna@yousee.in
+		->join('helpline_numbers','helpline_call.from_number = helpline_numbers.number')
+		->join('helpline_caller_type','helpline_call.caller_type_id = helpline_caller_type.caller_type_id','left')
+		->join('helpline_call_category','helpline_call.call_category_id = helpline_call_category.call_category_id','left')
+		->join('helpline_call_group','helpline_call.call_group_id = helpline_call_group.call_group_id','left')
+		->join('helpline_resolution_status','helpline_call.resolution_status_id = helpline_resolution_status.resolution_status_id','left')
+		->join('hospital','helpline_call.hospital_id = hospital.hospital_id','left')
+		->where('from_number IN (SELECT number FROM helpline_numbers)')
 		->order_by('start_time','desc');
 		$query = $this->db->get();
 		return $query->result();
@@ -230,29 +322,108 @@ class Helpline_model extends CI_Model{
 	}
 
 	function get_detailed_report(){
-			if($this->input->post('from_date') && $this->input->post('to_date')){
-				$this->db->where('(DATE(start_time) BETWEEN "'.date("Y-m-d",strtotime($this->input->post('from_date'))).'" AND "'.date("Y-m-d",strtotime($this->input->post('to_date'))).'")');
+		if($this->input->post('from_date') && $this->input->post('to_date')){
+			$from_date = date("Y-m-d",strtotime($this->input->post("from_date")));
+			$to_date = date("Y-m-d",strtotime($this->input->post("to_date")));
+			$this->db->where('(date(start_time) BETWEEN "'.$from_date.'" AND "'.$to_date.'")');
+		}
+		else if($this->input->post('from_date') || $this->input->post('to_date')){
+			$from_date;
+			$to_date;
+			if($this->input->post('from_date')){
+				$from_date = date("Y-m-d",strtotime($this->input->post("from_date")));
+				$to_date = $this->db->where('date(start_time)',date("Y-m-d"));
 			}
-			else
-				$this->db->where('DATE(start_time)',date("Y-m-d"));
-			$this->db->select('*,helpline_call.call_id,helpline_call.call_group_id, helpline_call.note,count(helpline_email_id) email_count')->from('helpline_call')
+			if($this->input->post('to_date')){
+				$to_date = date("Y-m-d",strtotime($this->input->post("to_date")));
+				$from_date = $this->db->where('date(start_time)',date("Y-m-d"));
+			}
+			$this->db->where('(date(start_time) BETWEEN "'.$from_date.'" AND "'.$to_date.'")');
+		}
+		else{
+			$this->db->where('date(start_time)',date("Y-m-d"));
+		}
+		if($this->input->post('helpline_id')){
+			$this->db->where('helpline.helpline_id',$this->input->post('helpline_id'));
+		}
+		$this->db->select('*, helpline_receiver.short_name as short_name, helpline_call.call_id, helpline_call.call_group_id, helpline_call.note,count(helpline_email_id) email_count, helpline.note as line_note')
+		->from('helpline_call')
+		->join('helpline', 'helpline_call.to_number=helpline.helpline','left')	// 6 Dec 18 -> gokulakrishna@yousee.in
+		->join('helpline_receiver','helpline_call.dial_whom_number = helpline_receiver.phone','left')
+		->join('helpline_caller_type','helpline_call.caller_type_id = helpline_caller_type.caller_type_id','left')
+		->join('helpline_call_category','helpline_call.call_category_id = helpline_call_category.call_category_id','left')
+		->join('helpline_resolution_status','helpline_call.resolution_status_id = helpline_resolution_status.resolution_status_id','left')
+		->join('helpline_call_group','helpline_call.call_group_id = helpline_call_group.call_group_id','left')
+		->join('hospital','helpline_call.hospital_id = hospital.hospital_id','left')
+		->join('helpline_email','helpline_call.call_id = helpline_email.call_id','left')
+		->group_by('helpline_call.call_id')
+		->where('from_number NOT IN (SELECT number FROM helpline_numbers)')		
+		->order_by('start_time','desc');
+		$query = $this->db->get();
+		return $query->result();
+	}
+	function get_voicemail_detailed_report(){
+		if($this->input->post('from_date') && $this->input->post('to_date')){
+			$from_date = date("Y-m-d",strtotime($this->input->post("from_date")));
+			$to_date = date("Y-m-d",strtotime($this->input->post("to_date")));
+			$this->db->where('(date(start_time) BETWEEN "'.$from_date.'" AND "'.$to_date.'")');
+		}
+		else if($this->input->post('from_date') || $this->input->post('to_date')){
+			$from_date;
+			$to_date;
+			if($this->input->post('from_date')){
+				$from_date = date("Y-m-d",strtotime($this->input->post("from_date")));
+				$to_date = $this->db->where('date(start_time)',date("Y-m-d"));
+			}
+			if($this->input->post('to_date')){
+				$to_date = date("Y-m-d",strtotime($this->input->post("to_date")));
+				$from_date = $this->db->where('date(start_time)',date("Y-m-d"));
+			}
+			$this->db->where('(date(start_time) BETWEEN "'.$from_date.'" AND "'.$to_date.'")');
+		}
+		else{
+			$this->db->where('date(start_time)',date("Y-m-d"));
+		}
+			if($this->input->post('helpline_id')){
+				$this->db->where('helpline.helpline_id',$this->input->post('helpline_id'));
+			}
+			$this->db->select('*,helpline_call.call_id,helpline_call.call_group_id, helpline_call.note,count(helpline_email_id) email_count')
+			->from('helpline_call')
+			->join('helpline', 'helpline_call.to_number=helpline.helpline','left')	// 6 Dec 18 -> gokulakrishna@yousee.in
 			->join('helpline_caller_type','helpline_call.caller_type_id = helpline_caller_type.caller_type_id','left')
 			->join('helpline_call_category','helpline_call.call_category_id = helpline_call_category.call_category_id','left')
 			->join('helpline_resolution_status','helpline_call.resolution_status_id = helpline_resolution_status.resolution_status_id','left')
 			->join('helpline_call_group','helpline_call.call_group_id = helpline_call_group.call_group_id','left')
 			->join('hospital','helpline_call.hospital_id = hospital.hospital_id','left')
 			->join('helpline_email','helpline_call.call_id = helpline_email.call_id','left')
+			->where('from_number IN (SELECT number FROM helpline_numbers)')
 			->group_by('helpline_call.call_id')
 			->order_by('start_time','desc');
 			$query = $this->db->get();
 			return $query->result();
-		}
+	}
 	function get_groups(){
-				if($this->input->post('from_date') && $this->input->post('to_date')){
-					$this->db->where('(DATE(start_time) BETWEEN "'.date("Y-m-d",strtotime($this->input->post('from_date'))).'" AND "'.date("Y-m-d",strtotime($this->input->post('to_date'))).'")');
-				}
-				else
-					$this->db->where('DATE(start_time)',date("Y-m-d"));
+		if($this->input->post('from_date') && $this->input->post('to_date')){
+			$from_date = date("Y-m-d",strtotime($this->input->post("from_date")));
+			$to_date = date("Y-m-d",strtotime($this->input->post("to_date")));
+			$this->db->where('(date(start_time) BETWEEN "'.$from_date.'" AND "'.$to_date.'")');
+		}
+		else if($this->input->post('from_date') || $this->input->post('to_date')){
+			$from_date;
+			$to_date;
+			if($this->input->post('from_date')){
+				$from_date = date("Y-m-d",strtotime($this->input->post("from_date")));
+				$to_date = $this->db->where('date(start_time)',date("Y-m-d"));
+			}
+			if($this->input->post('to_date')){
+				$to_date = date("Y-m-d",strtotime($this->input->post("to_date")));
+				$from_date = $this->db->where('date(start_time)',date("Y-m-d"));
+			}
+			$this->db->where('(date(start_time) BETWEEN "'.$from_date.'" AND "'.$to_date.'")');
+		}
+		else{
+			$this->db->where('date(start_time)',date("Y-m-d"));
+		}
 				$this->db->select('helpline_call.call_group_id,group_name')->from('helpline_call')
 				->join('helpline_call_group','helpline_call.call_group_id = helpline_call_group.call_group_id','left')
 				->group_by('helpline_call.call_group_id')
@@ -261,8 +432,13 @@ class Helpline_model extends CI_Model{
 				return $query->result();
 			}
 
-	function dashboard($type=""){
-
+	function dashboard($type="", $call_type = 0){
+		if($call_type == 1){
+			$this->db->where('from_number IN (select number FROM helpline_numbers)');
+		}
+		else{
+			$this->db->where('from_number NOT IN (select number FROM helpline_numbers)');			
+		}
 		if($type == "caller_type"){
 			$this->db->select('caller_type,count(call_id) as count');
 			$this->db->group_by('helpline_caller_type.caller_type_id');
@@ -333,20 +509,29 @@ class Helpline_model extends CI_Model{
 			',false);
 			$this->db->where('call_type','completed');
 		}
-
+		
 		if($this->input->post('from_date') && $this->input->post('to_date')){
-			$this->db->where('date(start_time) >=',date("Y-m-d",strtotime($this->input->post('from_date'))));
-			$this->db->where('date(start_time) <=',date("Y-m-d",strtotime($this->input->post('to_date'))));
+			$from_date = date("Y-m-d",strtotime($this->input->post("from_date")));
+			$to_date = date("Y-m-d",strtotime($this->input->post("to_date")));
+			$this->db->where('(date(start_time) BETWEEN "'.$from_date.'" AND "'.$to_date.'")');
 		}
-		else if($this->input->post('from_date')){
-			$this->db->where('date(start_time) >=',date("Y-m-d",strtotime($this->input->post('from_date'))));
+		else if($this->input->post('from_date') || $this->input->post('to_date')){
+			$from_date;
+			$to_date;
+			if($this->input->post('from_date')){
+				$from_date = date("Y-m-d",strtotime($this->input->post("from_date")));
+				$to_date = $this->db->where('date(start_time)',date("Y-m-d"));
+			}
+			if($this->input->post('to_date')){
+				$to_date = date("Y-m-d",strtotime($this->input->post("to_date")));
+				$from_date = $this->db->where('date(start_time)',date("Y-m-d"));
+			}
+			$this->db->where('(date(start_time) BETWEEN "'.$from_date.'" AND "'.$to_date.'")');
 		}
-		else if($this->input->post('to_date')){
-			$this->db->where('date(start_time) <=',date("Y-m-d",strtotime($this->input->post('to_date'))));
-		}
-		else
+		else{
 			$this->db->where('date(start_time)',date("Y-m-d"));
-
+		}
+			
 		if($this->input->post('caller_type')){
 			$this->db->where('helpline_caller_type.caller_type_id',$this->input->post('caller_type'));
 		}
@@ -362,30 +547,43 @@ class Helpline_model extends CI_Model{
 		if($this->input->post('visit_type')){
 			$this->db->where('helpline_call.ip_op',$this->input->post('visit_type'));
 		}
+		if($this->input->post('helpline_id')){
+			$this->db->where('helpline.helpline_id',$this->input->post('helpline_id'));
+		}
 
 		$this->db->from('helpline_call')
+		->join('helpline', 'helpline_call.to_number=helpline.helpline','left')	// 6 Dec 18 -> gokulakrishna@yousee.in
 		->join('helpline_caller_type','helpline_call.caller_type_id = helpline_caller_type.caller_type_id','left')
 		->join('helpline_call_category','helpline_call.call_category_id = helpline_call_category.call_category_id','left')
 		->join('helpline_receiver','helpline_call.dial_whom_number = helpline_receiver.phone','left')
 		->join('hospital','helpline_call.hospital_id = hospital.hospital_id','left');
 		$query = $this->db->get();
-
+	//	echo '<h4>'.$type.' '.$call_type.'</h4>'.' '.$this->db->last_query().'<br>';
 		return $query->result();
 	}
 
 	function helpline_trend(){
 		if($this->input->post('from_date') && $this->input->post('to_date')){
-			$this->db->where('date(start_time) >=',date("Y-m-d",strtotime($this->input->post('from_date'))));
-			$this->db->where('date(start_time) <=',date("Y-m-d",strtotime($this->input->post('to_date'))));
+			$from_date = date("Y-m-d",strtotime($this->input->post("from_date")));
+			$to_date = date("Y-m-d",strtotime($this->input->post("to_date")));
+			$this->db->where('(date(start_time) BETWEEN "'.$from_date.'" AND "'.$to_date.'")');
 		}
-		else if($this->input->post('from_date')){
-			$this->db->where('date(start_time) >=',date("Y-m-d",strtotime($this->input->post('from_date'))));
+		else if($this->input->post('from_date') || $this->input->post('to_date')){
+			$from_date;
+			$to_date;
+			if($this->input->post('from_date')){
+				$from_date = date("Y-m-d",strtotime($this->input->post("from_date")));
+				$to_date = $this->db->where('date(start_time)',date("Y-m-d"));
+			}
+			if($this->input->post('to_date')){
+				$to_date = date("Y-m-d",strtotime($this->input->post("to_date")));
+				$from_date = $this->db->where('date(start_time)',date("Y-m-d"));
+			}
+			$this->db->where('(date(start_time) BETWEEN "'.$from_date.'" AND "'.$to_date.'")');
 		}
-		else if($this->input->post('to_date')){
-			$this->db->where('date(start_time) <=',date("Y-m-d",strtotime($this->input->post('to_date'))));
+		else{
+			$this->db->where('date(start_time)',date("Y-m-d"));
 		}
-		else
-			$this->db->where('date(start_time) >= ',date("Y-m-d",strtotime("-1 months")));
 
 		if($this->input->post('caller_type')){
 			$this->db->where('helpline_caller_type.caller_type_id',$this->input->post('caller_type'));
@@ -421,10 +619,13 @@ class Helpline_model extends CI_Model{
 			$this->db->select("DATE_FORMAT(helpline_call.start_time ,\"%d-%b-%Y\") as date",false);
 			$this->db->group_by('date','desc');
 		}
-
+		if($this->input->post('helpline_id')){
+			$this->db->where('helpline.helpline_id',$this->input->post('helpline_id'));
+		}
 
 		$this->db->select("count(call_id) calls ")
 		->from('helpline_call')
+		->join('helpline', 'helpline_call.to_number=helpline.helpline','left')	//20 Dec 18 -> gokulakrishna@yousee.in
 		->join('helpline_caller_type','helpline_call.caller_type_id = helpline_caller_type.caller_type_id','left')
 		->join('helpline_call_category','helpline_call.call_category_id = helpline_call_category.call_category_id','left')
 		->join('helpline_receiver','helpline_call.dial_whom_number = helpline_receiver.phone','left')
@@ -439,6 +640,13 @@ class Helpline_model extends CI_Model{
 		$this->db->select("call_group_id,group_name,DATE_FORMAT(group_datetime,\"%d-%b-%Y, %h:%i %p\") as group_datetime", false)
 		->from('helpline_call_group')
 		->like('LOWER(group_name)',strtolower($this->input->post('query')));
+		$query = $this->db->get();
+		return $query->result();
+	}
+
+	function get_helpline(){
+		$this->db->select("helpline_id, helpline, note", false)
+		->from('helpline');
 		$query = $this->db->get();
 		return $query->result();
 	}

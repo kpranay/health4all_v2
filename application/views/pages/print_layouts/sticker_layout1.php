@@ -21,16 +21,14 @@ $hospital=$this->session->userdata('hospital'); ?>
                                 </td>
 			</tr>
 			<tr>
-				<td>
-					<span style='font-size:10px;'>Unit/Chief: </span><span style='font-size:10px;font-weight:bold'><?php echo $registered->unit_name;?></span>
-				</td>
+				<td></td>
 				<td colspan="2">
 					<span style='font-size:12px;' colspan="2">Dt. Of Reg: </span><span style='font-size:10px;font-weight:bold;'><?php echo ' '.date("d-M-Y",strtotime($registered->admit_date));?></span>
 				</td>
 			</tr>
 			<tr >
 				<td colspan="2">
-                                    <span style='font-size:12px;'>Patient ID: </span><span style='font-size:10px;font-weight:bold;'> <?php /* echo $registered->patient_id; */ if($registered->patient_id_manual != '') echo $registered->patient_id_manual; ?></span>
+                     <span style='font-size:12px;'>Patient ID: </span><span style='font-size:10px;font-weight:bold;'> <?php echo $registered->patient_id;  if($registered->patient_id_manual != '') echo $registered->patient_id_manual; ?></span>
 				</td>
 			</tr>
                         <tr>

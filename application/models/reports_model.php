@@ -10,7 +10,8 @@ class Reports_model extends CI_Model{
 			$to_date=date("Y-m-d",strtotime($this->input->post('to_date')));
 		}
 		else if($this->input->post('from_date') || $this->input->post('to_date')){
-			$this->input->post('from_date')?$from_date=$this->input->post('from_date'):$from_date=$this->input->post('to_date');
+			$this->input->post('from_date')
+			?$from_date=$this->input->post('from_date'):$from_date=$this->input->post('to_date');
 			$to_date=$from_date;
 		}
 		else{
@@ -55,7 +56,8 @@ class Reports_model extends CI_Model{
 		else{
 			$this->db->select('"0" as area',false);
 		}
-		$this->db->select("          department 'department',
+		//moved 30 to 60 interval --> 22 Dec 18 -->gokulakrishna@yousee.in
+		$this->db->select("(CASE when `department` IS NULL or department='' then 'Not Set' else department end) as 'department',
           SUM(CASE WHEN 1  THEN 1 ELSE 0 END) 'op',
 		SUM(CASE WHEN gender = 'F'  THEN 1 ELSE 0 END) 'op_female',
 		SUM(CASE WHEN gender = 'M'  THEN 1 ELSE 0 END) 'op_male',
@@ -63,16 +65,16 @@ class Reports_model extends CI_Model{
 		  SUM(CASE WHEN gender = 'F' AND age_years <= 14 THEN 1 ELSE 0 END) 'op_fchild',
 		  SUM(CASE WHEN gender = 'M' AND age_years <= 14 THEN 1 ELSE 0 END) 'op_mchild',
 		  SUM(CASE WHEN age_years > 14 AND age_years <= 30 THEN 1 ELSE 0 END) 'op_14to30',
-		  SUM(CASE WHEN gender = 'F' AND age_years > 14 AND age_years <= 30 THEN 1 ELSE 0 END) 'op_f14to30',
-		  SUM(CASE WHEN gender = 'M' AND age_years > 14 AND age_years <= 30 THEN 1 ELSE 0 END) 'op_m14to30',
-		  SUM(CASE WHEN age_years > 30 AND age_years < 60 THEN 1 ELSE 0 END) 'op_30to60',
-		SUM(CASE WHEN gender = 'F' AND age_years > 30 AND age_years < 60 THEN 1 ELSE 0 END) 'op_f30to60',
-		  SUM(CASE WHEN gender = 'M' AND age_years > 30 AND age_years < 60 THEN 1 ELSE 0 END) 'op_m30to60',
+		  SUM(CASE WHEN gender = 'F' AND age_years > 14 AND age_years < 30 THEN 1 ELSE 0 END) 'op_f14to30',	
+		  SUM(CASE WHEN gender = 'M' AND age_years > 14 AND age_years < 30 THEN 1 ELSE 0 END) 'op_m14to30',
+		  SUM(CASE WHEN age_years >= 30 AND age_years < 60 THEN 1 ELSE 0 END) 'op_30to60',
+		SUM(CASE WHEN gender = 'F' AND age_years >= 30 AND age_years < 60 THEN 1 ELSE 0 END) 'op_f30to60',
+		  SUM(CASE WHEN gender = 'M' AND age_years >= 30 AND age_years < 60 THEN 1 ELSE 0 END) 'op_m30to60',
 		SUM(CASE WHEN age_years >= 60 THEN 1 ELSE 0 END) 'op_60plus',
 		SUM(CASE WHEN gender = 'F' AND age_years >= 60 THEN 1 ELSE 0 END) 'op_f60plus',
-		  SUM(CASE WHEN gender = 'M' AND age_years > 60 THEN 1 ELSE 0 END) 'op_m60plus'");
+		  SUM(CASE WHEN gender = 'M' AND age_years >= 60 THEN 1 ELSE 0 END) 'op_m60plus'");
 		 $this->db->from('patient_visit')->join('patient','patient_visit.patient_id=patient.patient_id')
-		 ->join('department','patient_visit.department_id=department.department_id')
+		 ->join('department','patient_visit.department_id=department.department_id','left')
 		 ->join('unit','patient_visit.unit=unit.unit_id','left')
 		 ->join('area','patient_visit.area=area.area_id','left')
 		 ->join('hospital','patient_visit.hospital_id=hospital.hospital_id','left')
@@ -82,6 +84,7 @@ class Reports_model extends CI_Model{
 		 ->group_by('department');
 
 		$resource=$this->db->get();
+		
 		return $resource->result();
 	}
 	function get_ip_summary(){
@@ -137,6 +140,7 @@ class Reports_model extends CI_Model{
 		else{
 			$this->db->select('"0" as area',false);
 		}
+		//moved 30 to 60 interval --> 22 Dec 18 -->gokulakrishna@yousee.in
 		$this->db->select("department.department_id,patient_visit.visit_name_id, department 'department',
           SUM(CASE WHEN 1  THEN 1 ELSE 0 END) 'ip',
 		SUM(CASE WHEN gender = 'F'  THEN 1 ELSE 0 END) 'ip_female',
@@ -145,16 +149,16 @@ class Reports_model extends CI_Model{
 		  SUM(CASE WHEN gender = 'F' AND age_years <= 14 THEN 1 ELSE 0 END) 'ip_fchild',
 		  SUM(CASE WHEN gender = 'M' AND age_years <= 14 THEN 1 ELSE 0 END) 'ip_mchild',
 		  SUM(CASE WHEN age_years > 14 AND age_years <= 30 THEN 1 ELSE 0 END) 'ip_14to30',
-		  SUM(CASE WHEN gender = 'F' AND age_years > 14 AND age_years <= 30 THEN 1 ELSE 0 END) 'ip_f14to30',
-		  SUM(CASE WHEN gender = 'M' AND age_years > 14 AND age_years <= 30 THEN 1 ELSE 0 END) 'ip_m14to30',
+		  SUM(CASE WHEN gender = 'F' AND age_years > 14 AND age_years < 30 THEN 1 ELSE 0 END) 'ip_f14to30',
+		  SUM(CASE WHEN gender = 'M' AND age_years > 14 AND age_years < 30 THEN 1 ELSE 0 END) 'ip_m14to30',
 		  SUM(CASE WHEN age_years > 30 AND age_years < 60 THEN 1 ELSE 0 END) 'ip_30to60',
-		SUM(CASE WHEN gender = 'F' AND age_years > 30 AND age_years < 60 THEN 1 ELSE 0 END) 'ip_f30to60',
-		  SUM(CASE WHEN gender = 'M' AND age_years > 30 AND age_years < 60 THEN 1 ELSE 0 END) 'ip_m30to60',
+		SUM(CASE WHEN gender = 'F' AND age_years >= 30 AND age_years < 60 THEN 1 ELSE 0 END) 'ip_f30to60',
+		  SUM(CASE WHEN gender = 'M' AND age_years >= 30 AND age_years < 60 THEN 1 ELSE 0 END) 'ip_m30to60',
 		SUM(CASE WHEN age_years >= 60 THEN 1 ELSE 0 END) 'ip_60plus',
 		SUM(CASE WHEN gender = 'F' AND age_years >= 60 THEN 1 ELSE 0 END) 'ip_f60plus',
 		  SUM(CASE WHEN gender = 'M' AND age_years >= 60 THEN 1 ELSE 0 END) 'ip_m60plus'");
 		 $this->db->from('patient_visit')->join('patient','patient_visit.patient_id=patient.patient_id')
-		 ->join('department','patient_visit.department_id=department.department_id')
+		 ->join('department','patient_visit.department_id=department.department_id','left')
 		 ->join('unit','patient_visit.unit=unit.unit_id','left')
 		 ->join('area','patient_visit.area=area.area_id','left')
 		 ->join('visit_name','patient_visit.visit_name_id=visit_name.visit_name_id','left')
@@ -234,7 +238,7 @@ class Reports_model extends CI_Model{
         SUM(CASE WHEN outcome = 'Death' THEN 1 ELSE 0 END) 'total_death',
         SUM(CASE WHEN outcome!='Discharge' AND outcome!='LAMA' AND outcome!='Absconded' AND outcome!= 'Death' THEN 1 ELSE 0 END) 'total_unupdated'");
 		 $this->db->from('patient_visit')->join('patient','patient_visit.patient_id=patient.patient_id')
-		 ->join('department','patient_visit.department_id=department.department_id')
+		 ->join('department','patient_visit.department_id=department.department_id','left')
 		 ->join('unit','patient_visit.unit=unit.unit_id','left')
 		 ->join('area','patient_visit.area=area.area_id','left')
 		 ->join('visit_name','patient_visit.visit_name_id=visit_name.visit_name_id','left')
@@ -384,13 +388,13 @@ class Reports_model extends CI_Model{
 			$this->db->select('"0" as area',false);
 		}
 
-		$this->db->select("hosp_file_no,patient_visit.visit_id,CONCAT(IF(first_name=NULL,'',first_name),' ',IF(last_name=NULL,'',last_name)) name,
-		gender,IF(gender='F' AND father_name=NULL,spouse_name,father_name) parent_spouse,unit_name,area_name,
+		$this->db->select("patient.patient_id, patient.address, hosp_file_no,patient_visit.visit_id,CONCAT(IF(first_name=NULL,'',first_name),' ',IF(last_name=NULL,'',last_name)) name,
+		gender,IF(gender='F' AND (father_name IS NULL OR father_name = ''),spouse_name,father_name) parent_spouse,unit_name,area_name,
 		age_years,age_months,age_days,patient.place,phone,department,unit_name,area_name, admit_date, admit_time, mlc_number, mlc_number_manual",false);
 		 $this->db->from('patient_visit')
 		 ->join('patient','patient_visit.patient_id=patient.patient_id')
 		 ->join('mlc','mlc.visit_id=patient_visit.visit_id','left')
-		 ->join('department','patient_visit.department_id=department.department_id')
+		 ->join('department','patient_visit.department_id=department.department_id','left')
 		 ->join('unit','patient_visit.unit=unit.unit_id','left')
 		 ->join('area','patient_visit.area=area.area_id','left')
 		 ->join('hospital','patient_visit.hospital_id=hospital.hospital_id','left')
@@ -484,12 +488,12 @@ class Reports_model extends CI_Model{
 			$this->db->where("($date_type BETWEEN '$from_date' AND '$to_date')");
 		}
 
-		$this->db->select("hosp_file_no,patient_visit.visit_id,CONCAT(IF(first_name=NULL,'',first_name),' ',IF(last_name=NULL,'',last_name)) name,
+		$this->db->select("patient.patient_id, hosp_file_no,patient_visit.visit_id,CONCAT(IF(first_name=NULL,'',first_name),' ',IF(last_name=NULL,'',last_name)) name,
 		gender,IF(gender='F' AND father_name ='',spouse_name,father_name) parent_spouse,
 		age_years,age_months,age_days,patient.place,phone,address,admit_date,admit_time, department,unit_name,area_name,mlc_number,mlc_number_manual,
 		outcome,outcome_date,outcome_time",false);
 		 $this->db->from('patient_visit')->join('patient','patient_visit.patient_id=patient.patient_id')
-		 ->join('department','patient_visit.department_id=department.department_id')
+		 ->join('department','patient_visit.department_id=department.department_id','left')
 		 ->join('unit','patient_visit.unit=unit.unit_id','left')
 		 ->join('area','patient_visit.area=area.area_id','left')
 		 ->join('mlc','patient_visit.visit_id=mlc.visit_id','left')
@@ -579,7 +583,7 @@ class Reports_model extends CI_Model{
 		age_years,age_months,age_days,patient.place,phone,address,admit_date,admit_time, department,unit_name,area_name,mlc_number,icd_10,outcome,final_diagnosis,
 		outcome_date,outcome_time",false);
 		 $this->db->from('patient_visit')->join('patient','patient_visit.patient_id=patient.patient_id')
-		 ->join('department','patient_visit.department_id=department.department_id')
+		 ->join('department','patient_visit.department_id=department.department_id','left')
 		 ->join('unit','patient_visit.unit=unit.unit_id','left')
 		 ->join('area','patient_visit.area=area.area_id','left')
 		 ->join('mlc','patient_visit.visit_id=mlc.visit_id','left')
@@ -671,7 +675,7 @@ class Reports_model extends CI_Model{
 		->join('staff','test_order.doctor_id=staff.staff_id','left')
 		->join('patient_visit','test_order.visit_id=patient_visit.visit_id')
 		->join('patient','patient_visit.patient_id=patient.patient_id')
-		->join('department','patient_visit.department_id=department.department_id')
+		->join('department','patient_visit.department_id=department.department_id','left')
 		->join('unit','patient_visit.unit=unit.unit_id','left')
 		->join('area','patient_visit.area=area.area_id','left')
 		->join('specimen_type','test_sample.specimen_type_id=specimen_type.specimen_type_id','left')
@@ -936,7 +940,7 @@ class Reports_model extends CI_Model{
 		SUM(CASE WHEN gender = 'M'  THEN 1 ELSE 0 END) 'male'
 		");
 		 $this->db->from('patient_visit')->join('patient','patient_visit.patient_id=patient.patient_id')
-		 ->join('department','patient_visit.department_id=department.department_id')
+		 ->join('department','patient_visit.department_id=department.department_id','left')
 		 ->join('unit','patient_visit.unit=unit.unit_id','left')
 		 ->join('area','patient_visit.area=area.area_id','left')
 		 ->join('hospital','patient_visit.hospital_id=hospital.hospital_id','left')
@@ -1136,7 +1140,7 @@ class Reports_model extends CI_Model{
         SUM(CASE WHEN gender = 'M' AND outcome!='Discharge' AND outcome!='LAMA' AND outcome!='Absconded' AND outcome!= 'Death' THEN 1 ELSE 0 END) 'male_unupdated',
         SUM(CASE WHEN outcome!='Discharge' AND outcome!='LAMA' AND outcome!='Absconded' AND outcome!= 'Death' THEN 1 ELSE 0 END) 'total_unupdated'");
 		 $this->db->from('patient_visit')->join('patient','patient_visit.patient_id=patient.patient_id')
-		 ->join('department','patient_visit.department_id=department.department_id')
+		 ->join('department','patient_visit.department_id=department.department_id','left')
 		 ->join('unit','patient_visit.unit=unit.unit_id','left')
 		 ->join('area','patient_visit.area=area.area_id','left')
 		 ->join('hospital','patient_visit.hospital_id=hospital.hospital_id','left')
@@ -1285,15 +1289,180 @@ class Reports_model extends CI_Model{
 		return $resource->result();
 	}
 
+	// diagnostics dashboard to group data by hospital type
+	function diagnostic_dashboard_HospitalWise(){
+		if($this->input->post('from_date') && $this->input->post('to_date')){
+			$from_date=date("Y-m-d",strtotime($this->input->post('from_date')));
+			$to_date=date("Y-m-d",strtotime($this->input->post('to_date')));
+		}
+		else if($this->input->post('from_date') || $this->input->post('to_date')){
+			$this->input->post('from_date')?$from_date=$this->input->post('from_date'):$from_date=$this->input->post('to_date');
+			$to_date=$from_date;
+		}
+		else{
+			$from_date=date("Y-m-d");
+			$to_date=$from_date;
+		}
+
+			$this->db->select("test_method,test_id,
+		SUM(CASE WHEN test.test_status IN (0,1,2,3) THEN 1 ELSE 0 END) tests_ordered,
+		SUM(CASE WHEN test.test_status IN (1,2,3) THEN 1 ELSE 0 END) tests_completed,
+		SUM(CASE WHEN test.test_status = 2 THEN 1 ELSE 0 END) tests_reported,
+		SUM(CASE WHEN test.test_status = 3 THEN 1 ELSE 0 END) tests_rejected,count(DISTINCT hospital.hospital_id) hospital_count,
+		test_method.test_method_id,test_master.test_master_id,hospital.type4 type,count(DISTINCT test_order.visit_id) patient_count,count(DISTINCT test_order.order_id) orders_count,test_master.test_name,test_area.test_area_id",false)
+		->from('test_order')
+		->join('test_sample','test_order.order_id = test_sample.order_id','left')
+		->join('patient_visit','test_order.visit_id = patient_visit.visit_id')
+		->join('hospital','patient_visit.hospital_id=hospital.hospital_id')
+		->join('department','patient_visit.department_id = department.department_id')
+		->join('test_area','test_order.test_area_id = test_area.test_area_id')
+		->join('test','test_order.order_id = test.order_id','left')
+		->join('test_master','test.test_master_id = test_master.test_master_id')
+		->join('test_method','test_master.test_method_id = test_method.test_method_id')
+		->where("(DATE(order_date_time) BETWEEN '$from_date' AND '$to_date')")
+		->group_by('hospital.type4');
+		
+		$resource=$this->db->get();
+		// echo $this->db->last_query();
+		return $resource->result();		
+	}
+	// Diagnostics dashboard to group data by lab area 
+	function diagnostic_dashboard_AreaWise(){
+		if($this->input->post('from_date') && $this->input->post('to_date')){
+			$from_date=date("Y-m-d",strtotime($this->input->post('from_date')));
+			$to_date=date("Y-m-d",strtotime($this->input->post('to_date')));
+		}
+		else if($this->input->post('from_date') || $this->input->post('to_date')){
+			$this->input->post('from_date')?$from_date=$this->input->post('from_date'):$from_date=$this->input->post('to_date');
+			$to_date=$from_date;
+		}
+		else{
+			$from_date=date("Y-m-d");
+			$to_date=$from_date;
+		}
+
+			$this->db->select("test_method,test_id,
+		SUM(CASE WHEN test.test_status IN (0,1,2,3) THEN 1 ELSE 0 END) tests_ordered,
+		SUM(CASE WHEN test.test_status IN (1,2,3) THEN 1 ELSE 0 END) tests_completed,
+		SUM(CASE WHEN test.test_status = 2 THEN 1 ELSE 0 END) tests_reported,
+		SUM(CASE WHEN test.test_status = 3 THEN 1 ELSE 0 END) tests_rejected,count(DISTINCT hospital.hospital_id) hospital_count,
+		test_area.test_area_id,count(DISTINCT test_order.visit_id) patient_count,count(DISTINCT test_order.order_id) orders_count,test_area.test_area",false)
+		->from('test_order')
+		->join('test_sample','test_order.order_id = test_sample.order_id','left')
+		->join('patient_visit','test_order.visit_id = patient_visit.visit_id')
+		->join('hospital','patient_visit.hospital_id=hospital.hospital_id')
+		->join('department','patient_visit.department_id = department.department_id')
+		->join('test_area','test_order.test_area_id = test_area.test_area_id')
+		->join('test','test_order.order_id = test.order_id','left')
+		->join('test_master','test.test_master_id = test_master.test_master_id')
+		->join('test_method','test_master.test_method_id = test_method.test_method_id')
+		->where("(DATE(order_date_time) BETWEEN '$from_date' AND '$to_date')")
+		->group_by('test_area.test_area');
+		
+		$resource=$this->db->get();
+	//	echo $this->db->last_query();
+		return $resource->result();			 	
+	}
+
+	/**
+    * Added By : Manish Kumar Sadhu
+    */
+	function diagnostic_board($type=""){
+		$to_date=date("Y-m-d");
+		//var_dump($to_date);
+		//$to_date='2016-01-08';
+		$from_date=strtotime( '-2 day' ,strtotime ( $to_date ) );
+		$yesterday=strtotime( '-1 day' ,strtotime ( $to_date ) );
+		
+		$yesterday=date( "Y-m-d" , $yesterday );
+		$from_date=date( "Y-m-d" , $from_date );
+		//var_dump($yesterday);
+		//var_dump($from_date);
+		$this->db->select("test_method,test_id,DATE(order_date_time) date,
+		SUM(CASE WHEN test.test_status IN (0,1,2,3) THEN 1 ELSE 0 END) tests_ordered,
+		SUM(CASE WHEN test.test_status IN (1,2,3) THEN 1 ELSE 0 END) tests_completed,
+		SUM(CASE WHEN test.test_status = 2 THEN 1 ELSE 0 END) tests_reported,
+		SUM(CASE WHEN test.test_status = 3 THEN 1 ELSE 0 END) tests_rejected,count(DISTINCT hospital.hospital_id) hospital_count,
+		test_method.test_method_id,test_master.test_master_id,hospital.type4 type,count(DISTINCT test_order.visit_id) patient_count,count(DISTINCT test_order.order_id) orders_count,test_master.test_name",false)
+		->from('test_order')
+		->join('test_sample','test_order.order_id = test_sample.order_id','left')
+		->join('patient_visit','test_order.visit_id = patient_visit.visit_id')
+		->join('hospital','patient_visit.hospital_id=hospital.hospital_id')
+		->join('department','patient_visit.department_id = department.department_id')
+		->join('test','test_order.order_id = test.order_id','left')
+		->join('test_master','test.test_master_id = test_master.test_master_id')
+		->join('test_method','test_master.test_method_id = test_method.test_method_id')
+		->where("(DATE(order_date_time) BETWEEN '$from_date' AND '$to_date')")
+		->group_by('DATE(order_date_time)');
+		if($type == ""){
+			$this->db->select("hospital.type4 hospital_type")
+			->group_by('hospital.type4');
+		}
+		
+		if($type == "lab_area" ){
+			$this->db->select("test_area.test_area lab_area,test_area.test_area_id")
+			->join('test_area','test_order.test_area_id = test_area.test_area_id')
+			->group_by('test_area.test_area_id')
+			->order_by('test_area.test_area','asc');
+		}			
+ 		$resource=$this->db->get();
+		//echo $this->db->last_query();
+		return $resource->result();		
+	}
+	/**
+    * Added By : Manish Kumar Sadhu
+    */
+
+	function diagnostic_hospital_board($hospital_type=" " , $type=" "){
+		$to_date=date("Y-m-d");
+		//var_dump($hospital_type);
+		//$to_date='2016-01-08';
+		$from_date=strtotime( '-2 day' ,strtotime ( $to_date ) );
+		$yesterday=strtotime( '-1 day' ,strtotime ( $to_date ) );
+		$yesterday=date( "Y-m-d" , $yesterday );
+		$from_date=date( "Y-m-d" , $from_date );
+		$this->db->select("test_method,test_id,DATE(order_date_time) date,
+		SUM(CASE WHEN test.test_status IN (0,1,2,3) THEN 1 ELSE 0 END) tests_ordered,
+		SUM(CASE WHEN test.test_status IN (1,2,3) THEN 1 ELSE 0 END) tests_completed,
+		SUM(CASE WHEN test.test_status = 2 THEN 1 ELSE 0 END) tests_reported,
+		SUM(CASE WHEN test.test_status = 3 THEN 1 ELSE 0 END) tests_rejected,count(DISTINCT hospital.hospital_id) hospital_count,
+		test_method.test_method_id,test_master.test_master_id,hospital.type4 type,hospital.hospital_short_name hospital,
+		count(DISTINCT test_order.visit_id) patient_count,count(DISTINCT test_order.order_id) orders_count,
+		test_master.test_name",false)
+		->from('test_order')
+		->join('test_sample','test_order.order_id = test_sample.order_id','left')
+		->join('patient_visit','test_order.visit_id = patient_visit.visit_id')
+		->join('hospital','patient_visit.hospital_id=hospital.hospital_id')
+		->join('department','patient_visit.department_id = department.department_id')
+		->join('test','test_order.order_id = test.order_id','left')
+		->join('test_master','test.test_master_id = test_master.test_master_id')
+		->join('test_method','test_master.test_method_id = test_method.test_method_id')
+		->where("(DATE(order_date_time) BETWEEN '$from_date' AND '$to_date')")
+		->where("REPLACE(hospital.type4, ' ', '')=" , $hospital_type) 
+		//->where('hospital.type3',$hospital_type) 
+		->group_by('hospital.hospital_id');
+		if($type == "lab_area" ){
+			$this->db->select("test_area.test_area lab_area")
+			->join('test_area','test_order.test_area_id = test_area.test_area_id')
+			->group_by('test_area.test_area_id')
+			->order_by('test_area.test_area','asc');
+		}			
+ 		$resource=$this->db->get();
+		// echo $this->db->last_query();
+		return $resource->result();		
+	}
+	/**
+    * Added By : Manish Kumar Sadhu
+    */
 
 	function dashboard($organization="",$type="",$state=""){
 
 		if($type == "state" && $state != "") {
-			$this->db->select('organization, short_name, type6, state')->from('dashboards')->where('LOWER(state_alias)',strtolower($state));
+			$this->db->select('organization, short_name, type6, state')->from('dashboards')->where('LOWER(state_alias)', strtolower($state));
 			$query = $this->db->get();
 			$dashboard = $query->result();
 		}
-		else {
+		else {	
 		$this->db->select('organization, short_name, type6, state')->from('dashboards')->where('LOWER(short_name)',strtolower($organization));
 		$query = $this->db->get();
 		$dashboard = $query->result();
@@ -1301,10 +1470,10 @@ class Reports_model extends CI_Model{
 
 		if(!!$dashboard[0]->state)
 				$this->db->where('hospital.state',$dashboard[0]->state);
-		for($i=1;$i<7;$i++){
-			if(isset($dashboard[0]->{"type".$i}))
-				$this->db->where("hospital.type$i",$dashboard[0]->{"type".$i});
-		}
+			for($i=1;$i<7;$i++){
+				if(isset($dashboard[0]->{"type".$i}))
+					$this->db->where("hospital.type$i",$dashboard[0]->{"type".$i});
+			}
 		}
 
 		/** query to select patient count by OP, IP and Repeat OP*/
@@ -1320,7 +1489,6 @@ class Reports_model extends CI_Model{
 		}
 
 		if($this->input->post('from_date') || $this->input->post('to_date')){
-
 			if($this->input->post('from_date')){
 				$date = date("Y-m-d",strtotime($this->input->post('from_date')));
 				$this->db->where('pv.admit_date >=',$date);
@@ -1347,13 +1515,12 @@ class Reports_model extends CI_Model{
 			$this->db->where("pv.admit_time BETWEEN '$from_time' AND '$to_time'");
 		}
 
-
 		if($this->input->post('hospitaltype')){
 			$this->db->where('hospital.type4',$this->input->post('hospitaltype') == "Others" ? "" : $this->input->post('hospitaltype'));
 		}
 
 		if($type == ""){
-			$this->db->select('hospital.type4, count(DISTINCT hospital.hospital_id) hospital_count');
+			$this->db->select('hospital.type2, hospital.type4, count(DISTINCT hospital.hospital_id) hospital_count');
 			$this->db->group_by('hospital.type4');
 		}
 		if($type == "district"){
@@ -1372,15 +1539,11 @@ class Reports_model extends CI_Model{
 			->group_by('hospital.hospital_id');
 		}
 		if($type == "state"){
-
 			$typearray = array();
 			for($i=0;$i<sizeof($dashboard);$i++){
-
 				if(isset($dashboard[$i]->type6)){
-
 					array_push($typearray,$dashboard[$i]->type6);
 				}
-
 			}
 			if(sizeof($typearray) > 0){
 				$this->db->where_in("hospital.type6", $typearray);
@@ -1393,8 +1556,7 @@ class Reports_model extends CI_Model{
 		}
 
 		$query = $this->db->get();
-
-
+	//	echo $this->db->last_query();
 		$resource = $query->result();
 		if($type == "state") {
 			return array($dashboard[0]->state,$resource);

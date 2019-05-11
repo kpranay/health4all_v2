@@ -1,4 +1,11 @@
+<?php
+	// Legacy code work around
+	$CI =& get_instance();
+	$CI->load->model('dashboard_model');
+	$hosptial_ownership_np = $CI->dashboard_model->get_organizations_by_type(2, 1, 'non-profit');
+?>
 <?php $thispage="h4a"; ?>
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -13,6 +20,7 @@
 	<script type="text/javascript" src="<?php echo base_url();?>assets/js/jquery.min.js"></script>
 	<script type="text/javascript" src="<?php echo base_url();?>assets/js/bootstrap.min.js"></script>
 	<script type="text/javascript" src="<?php echo base_url();?>assets/js/jquery.chained.min.js"></script>
+	<script type="text/javascript" src="<?php echo base_url();?>assets/js/jquery.tablesorter.min.js"></script>
 	<script>
 	$(function () {
 	  $('[data-toggle="popover"]').popover({trigger:'hover',html:true});
@@ -28,7 +36,8 @@
       <div class="container">
         <div class="navbar-header">
 		<!-- Bootstrap toggle menu for mobile devices, only visible on small screens -->
-		<a class="navbar-brand" href="https://yousee.in/c4c" target="_blank"><span style="position:absolute;font-size:2.7em;left:5%;top:10px" class="logo logo-yousee"> </span> </a>
+		<a class="navbar-brand" href="https://yousee.in/c4c" target="_blank"><span style="position:absolute;font-size:2.7em;left:5%;top:10px" class="logo logo-yousee"></a>
+		
           <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-collapse">
             <span class="sr-only">Toggle navigation</span>
             <span class="icon-bar"></span>
@@ -41,6 +50,7 @@
           <ul class="nav navbar-nav">
 			<?php if($this->session->userdata('logged_in')) {
 			//Loop through the session data to check if the user has access to each function and only display those.
+
 			foreach($functions as $f){
 					//Check if the user has access to Out Patient Registration forms or In Patient Registration forms
 					if($f->user_function=="Out Patient Registration" || $f->user_function=="In Patient Registration" || $f->user_function == "View Patients" || $f->user_function == "Update Patients"){
@@ -242,7 +252,7 @@
 					$f->user_function=="OP Detail" || $f->user_function=="IP Detail" ||
 					$f->user_function=="Diagnostics - Detail" || $f->user_function=="Diagnostics - Summary" ||
 					($f->user_function == "Sanitation Evaluation" && $f->view==1) ||
-					$f->user_function == "Bloodbank" || $f->user_function == "Outcome Summary" || $f->user_function == "Helpline Reports"){ ?>
+					$f->user_function == "Bloodbank" || $f->user_function == "Outcome Summary" || $f->user_function == "Helpline Reports"|| $f->user_function == "follow_up_report"){ ?>
 					<li class="dropdown  <?php if(preg_match("^".base_url()."reports^",current_url())){ echo "active";}?>">
 						<a href="#" class="dropdown-toggle js-activated" data-toggle="dropdown"><i class="fa fa-line-chart"></i> Reports <b class="caret"></b></a>
 						<ul class="dropdown-menu">
@@ -265,6 +275,8 @@
 						  <li><a href="<?php echo base_url()."op_ip_report/op_ip_summary_report";?>">District Wise IP/OP Summary</a></li>
 						  <li><a href="<?php echo base_url()."patient/casesheet_mrd_status";?>">MRD Report</a></li>
 						  <li><a href="<?php echo base_url()."staff_report/get_patient_records";?>">Staff Activity OP/IP</a></li>
+						  <li><a href="<?php echo base_url()."staff_report/get_doctor_activity";?>">Doctor Activity OP/IP</a></li>
+						  <li><a href="<?php echo base_url()."staff_report/get_doc_act_by_institute";?>">Doctor Activity By Institution </a></li>
 						  <li><a href="<?php echo base_url()."staff_report/get_lab_records";?>">Diagnostics Staff Activity</a></li>
 						  <li><a href="<?php echo base_url()."reports/ip_op_trends";?>">IP/OP Trends</a></li>
 						  <li><a href="<?php echo base_url()."reports/icd_summary";?>">ICD Code Summary</a></li>
@@ -295,6 +307,11 @@
 				<?php
 					}
 				?>
+				<?php
+					if($f->user_function=="prescription_report"){ ?>
+           <!--       		<li><a href="<?php echo base_url()."report/get/vitals_report";?>"><i class="glyphicon glyphicon-heart"></i> Vitals Report</a></li> -->
+						<li><a href="<?php echo base_url()."report/get/prescription_report";?>"><i class="glyphicon glyphicon-pencil"></i> Prescription Report</a></li>
+					<?php }?>
 			<?php	}	?>
 			<li class="divider"></li>
 			<?php foreach($functions as $f){
@@ -306,8 +323,11 @@
 			}
 			}
 			foreach($functions as $f){
-			if($f->user_function=="OP Detail"){ ?>
-						<li><a href="<?php echo base_url()."reports/op_detail";?>">OP Detail</a></li>
+			if($f->user_function=="OP Detail"){ //OP Detail?>
+						<li><a href="<?php echo base_url()."report/get/op_vitals_detailed";?>">OP Detail</a></li>
+			<?php	}
+			if($f->user_function=="follow_up_report"){ ?>
+				<li><a href="<?php echo base_url()."report/get/follow_up_report";?>">Follow Up Report</a></li>
 			<?php	}
 			if($f->user_function=="IP Detail"){ ?>
 						<li><a href="<?php echo base_url()."reports/ip_detail";?>">IP Detail</a></li>
@@ -323,6 +343,7 @@
 
 			if($f->user_function=="Helpline Reports"){ ?>
 								<li><a href="<?php echo base_url()."helpline/detailed_report";?>">Helpline Detailed</a></li>
+								<li><a href="<?php echo base_url()."helpline/voicemail_detailed_report";?>">Helpline Voicemail Detailed</a></li>
 								<li><a href="<?php echo base_url()."helpline/report_groupwise";?>">Helpline Group Wise</a></li>
 					<?php	}
 
@@ -341,13 +362,11 @@
 			<?php foreach($functions as $f){
 			if($f->user_function=="Helpline Update"){ ?>
 					<li><a href="<?php echo base_url()."helpline/update_call";?>"><i class="fa fa-phone"></i>HelpLine Update</a></li>
+					<li><a href="<?php echo base_url()."helpline/update_voicemail_calls";?>"><i class="fa fa-phone"></i>HelpLine Voicemail Update</a></li>
 			<?php } } ?>
                     <li><a href="<?php echo base_url()."contact_us";?>"><i class="fa fa-question"> </i> Contact us</a></li>
 				</ul>
 			</li>
-
-
-
 			<?php } ?>
 
 		</ul>
@@ -357,7 +376,8 @@
 				<?php
 					$logged_in=$this->session->userdata('logged_in');
 					$hospital=$this->session->userdata('hospital');
-					echo $hospital['hospital_short_name']." | ".$logged_in['username']; ?> <b class="caret"></b></a>
+					$hospital_name = $hospital['hospital_short_name'] ? $hospital['hospital_short_name'] : $hospital['hospital'];
+					echo $hospital_name." | ".$logged_in['staff_first_name'].' '.$logged_in['staff_last_name']." | ".$logged_in['username']; ?> <b class="caret"></b></a>
                 <ul class="dropdown-menu">
 				<?php
 				foreach($functions as $f){
@@ -384,17 +404,23 @@
 				</a>
                 <ul class="dropdown-menu">
                   <li><a href="<?php echo base_url()."dashboard/helpline";?>">Helpline</a></li>
+                  <li><a href="<?php echo base_url()."dashboard/helpline_voicemail";?>">Transport Services</a></li>
                   <li><a href="<?php echo base_url()."dashboard/state/telangana";?>">State - TS</a></li>
                   <li><a href="<?php echo base_url()."dashboard/view/tvvp";?>">TVVP</a></li>
                   <li><a href="<?php echo base_url()."dashboard/view/dmetelangana";?>">DME Telangana</a></li>
                   <li><a href="<?php echo base_url()."dashboard/view/dmeap";?>">DME AP</a></li>
                   <li><a href="<?php echo base_url()."dashboard/bloodbanks";?>">Blood Banks</a></li>
-                  <li><a href="<?= base_url()."dashboard/view/npo";?>">NPOs</a></li>
+                  <li><a href="<?= base_url()."dashboard/diagnostics_dashboard_1";?>">Diagnostics - 1</a></li>
+				  <li><a href="<?= base_url()."dashboard/diagnostics_dashboard_2";?>">Diagnostics - 2</a></li>
+				  <li><a href="<?= base_url()."dashboard/org_type/non-profit";?>">NPOs</a></li>
+				  <?php foreach($hosptial_ownership_np as $ownership){ ?>
+					  <li><a href="<?= base_url()."dashboard/org/".$ownership->query_string; ?>"><?php echo $ownership->type2; ?></a></li>
+				 <?php } ?>				 
                 </ul>
 			</li>
           </ul>
         </div><!--/.nav-collapse -->
       </div>
     </div>
-
+	
 	<div class="container">
